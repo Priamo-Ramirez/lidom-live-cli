@@ -1,0 +1,146 @@
+{
+  "gamePk": 851509,
+  "gameData": {
+    "status": {
+      "detailedState": "In Progress"
+    },
+    "datetime": {
+      "officialDate": "2026-10-16"
+    },
+    "venue": {
+      "name": "Estadio Quisqueya Juan Marichal"
+    },
+    "teams": {
+      "away": {
+        "name": "Aguilas Cibaenas"
+      },
+      "home": {
+        "name": "Gigantes del Cibao"
+      }
+    }
+  },
+  "liveData": {
+    "linescore": {
+      "currentInning": 4,
+      "inningState": "Top",
+      "teams": {
+        "away": {
+          "runs": 3,
+          "hits": 7,
+          "errors": 0
+        },
+        "home": {
+          "runs": 2,
+          "hits": 5,
+          "errors": 1
+        }
+      },
+      "offense": {
+        "team": {
+          "name": "Aguilas Cibaenas"
+        },
+        "onDeck": {
+          "fullName": "Junior Lake"
+        },
+        "first": {
+          "fullName": "Corredor 1B"
+        },
+        "second": {
+          "fullName": "Corredor 2B"
+        }
+      }
+    },
+    "boxscore": {
+      "teams": {
+        "away": {
+          "players": {
+            "ID100": {
+              "stats": {
+                "batting": {
+                  "summary": "3-1, BB"
+                }
+              }
+            }
+          },
+          "teamStats": {
+            "batting": {
+              "avg": ".278"
+            }
+          }
+        },
+        "home": {
+          "players": {
+            "ID200": {
+              "stats": {
+                "pitching": {
+                  "summary": "1.1 IP, 1 H, 0 ER, 2 K"
+                }
+              }
+            }
+          },
+          "teamStats": {
+            "batting": {
+              "avg": ".262"
+            }
+          }
+        }
+      }
+    },
+    "plays": {
+      "currentPlay": {
+        "about": {
+          "inning": 4,
+          "halfInning": "top"
+        },
+        "matchup": {
+          "batter": {
+            "id": 100,
+            "fullName": "Juan Soto"
+          },
+          "batSide": {
+            "description": "Left"
+          },
+          "pitcher": {
+            "id": 200,
+            "fullName": "Wily Peralta"
+          },
+          "pitchHand": {
+            "description": "Right"
+          },
+          "splits": {
+            "menOnBase": "RISP"
+          }
+        },
+        "count": {
+          "balls": 2,
+          "strikes": 1,
+          "outs": 1
+        },
+        "playEvents": [
+          {
+            "details": {
+              "description": "Ball",
+              "type": {
+                "description": "Fastball"
+              }
+            },
+            "pitchData": {
+              "startSpeed": 95.2
+            }
+          },
+          {
+            "details": {
+              "description": "Called Strike",
+              "type": {
+                "description": "Slider"
+              }
+            },
+            "pitchData": {
+              "startSpeed": 84.1
+            }
+          }
+        ]
+      }
+    }
+  }
+}

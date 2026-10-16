@@ -9,9 +9,13 @@ from dataclasses import asdict
 from datetime import datetime
 from time import sleep
 from urllib.error import HTTPError, URLError
+from zoneinfo import ZoneInfo
 
 from .client import (
     DOMINICAN_TZ,
+    AtBatSnapshot,
+    GameStatsSummary,
+    LeagueHittingLeader,
     LidomApiClient,
     LidomGameScore,
     get_today_in_dominican_republic,
@@ -20,6 +24,13 @@ from .client import (
 EXIT_OK = 0
 EXIT_NETWORK_ERROR = 3
 EXIT_RESPONSE_ERROR = 4
+
+ANSI_RESET = "\033[0m"
+ANSI_BOLD = "\033[1m"
+ANSI_CYAN = "\033[36m"
+ANSI_GREEN = "\033[32m"
+ANSI_YELLOW = "\033[33m"
+ANSI_RED = "\033[31m"
 
 
 def _score(value: int | None) -> str:
@@ -89,6 +100,112 @@ def _render_table(
     return "\n".join(lines)
 
 
+def _render_at_bat(snapshot: AtBatSnapshot, compact: bool, use_color: bool) -> str:
+    inning_label = _inning_label(snapshot.half_inning, snapshot.inning)
+    pitcher_suffix = f" ({_hand_short(snapshot.pitcher_hand)})" if snapshot.pitcher_hand else ""
+    batter_suffix = f" ({_hand_short(snapshot.batter_side)})" if snapshot.batter_side else ""
+    last_pitch = snapshot.last_pitch_type
+    if snapshot.last_pitch_speed is not None:
+        last_pitch = f"{last_pitch}, {snapshot.last_pitch_speed:.1f} mph"
+
+    if compact:
+        return (
+            f"{snapshot.away_team} {_score(snapshot.away_runs)}-{_score(snapshot.home_runs)} "
+            f"{snapshot.home_team} | {inning_label} | Outs: {snapshot.outs} | "
+            f"{snapshot.batter}{batter_suffix} vs {snapshot.pitcher}{pitcher_suffix} | "
+            f"Conteo {_format_count(snapshot.balls, snapshot.strikes, use_color=False)} | "
+            f"Último: {snapshot.last_event} ({last_pitch})"
+        )
+
+    separator = "=" * 80
+    lines = [
+        _style(separator, ANSI_CYAN, use_color),
+        _style("LIDOM EN VIVO", ANSI_BOLD, use_color),
+        f"Juego: {snapshot.away_team} vs {snapshot.home_team}",
+        (
+            f"Estado: {snapshot.status} | Fecha: {snapshot.official_date or '-'} | "
+            f"Estadio: {snapshot.venue or '-'}"
+        ),
+        (
+            f"Marcador: {snapshot.away_team} {_score(snapshot.away_runs)} - "
+            f"{_score(snapshot.home_runs)} {snapshot.home_team}"
+        ),
+        f"Inning: {inning_label} | Outs: {snapshot.outs} | Corredores: {snapshot.runners}",
+        _style(separator, ANSI_CYAN, use_color),
+        "",
+        _style("TURNO ACTUAL", ANSI_BOLD, use_color),
+        f"- Equipo al bate: {snapshot.batting_team or '-'}",
+        f"- Bateador: {snapshot.batter}{batter_suffix}",
+        f"- Pitcher: {snapshot.pitcher}{pitcher_suffix}",
+        f"- Conteo: {_format_count(snapshot.balls, snapshot.strikes, use_color)}",
+        f"- Último pitcheo: {snapshot.last_event} ({last_pitch})",
+        "",
+        _style("SECUENCIA DEL TURNO", ANSI_BOLD, use_color),
+    ]
+
+    if snapshot.event_sequence:
+        for idx, event in enumerate(snapshot.event_sequence, start=1):
+            lines.append(f"{idx}) {event}")
+    else:
+        lines.append("Sin eventos registrados para este turno.")
+
+    lines.extend(
+        [
+            "",
+            _style("CONTEXTO RÁPIDO", ANSI_BOLD, use_color),
+            f"- Bateador hoy: {snapshot.batter_today}",
+            f"- Pitcher hoy: {snapshot.pitcher_today}",
+            f"- Próximo bateador: {snapshot.on_deck or '-'}",
+            _style(separator, ANSI_CYAN, use_color),
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _render_game_stats(summary: GameStatsSummary) -> str:
+    lines = [
+        f"Juego {summary.game_pk} | {summary.away_team} vs {summary.home_team}",
+        f"Estado: {summary.status}",
+    ]
+    if summary.current_inning:
+        lines.append(f"Inning: {summary.inning_state} {summary.current_inning}")
+    lines.extend(
+        [
+            "",
+            f"{'Equipo':<26} {'R':>2} {'H':>2} {'E':>2} {'AVG':>6}",
+            "-" * 44,
+            (
+                f"{summary.away_team:<26} {_score(summary.away_runs):>2} "
+                f"{_score(summary.away_hits):>2} {_score(summary.away_errors):>2} "
+                f"{summary.away_avg or '-':>6}"
+            ),
+            (
+                f"{summary.home_team:<26} {_score(summary.home_runs):>2} "
+                f"{_score(summary.home_hits):>2} {_score(summary.home_errors):>2} "
+                f"{summary.home_avg or '-':>6}"
+            ),
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _render_league_leaders(leaders: list[LeagueHittingLeader], season: int) -> str:
+    lines = [f"Líderes de bateo LIDOM | Temporada {season}", "-" * 74]
+    if not leaders:
+        lines.append("Sin estadísticas de bateo disponibles para esta temporada.")
+        return "\n".join(lines)
+
+    lines.append(f"{'#':>2} {'Jugador':<28} {'Equipo':<22} {'AVG':>6} {'AB':>4} {'H':>4} {'OPS':>6}")
+    lines.append("-" * 74)
+    for leader in leaders:
+        lines.append(
+            f"{leader.rank:>2} {leader.player_name:<28} {leader.team_name:<22} "
+            f"{leader.avg:>6} {_score(leader.at_bats):>4} {_score(leader.hits):>4} "
+            f"{leader.ops or '-':>6}"
+        )
+    return "\n".join(lines)
+
+
 def _fetch_filtered_games(
     client: LidomApiClient, date_iso: str, status_filter: str | None, team_filter: str | None
 ) -> list[LidomGameScore]:
@@ -116,6 +233,34 @@ def _print_now(
         print(json.dumps([asdict(game) for game in games], ensure_ascii=False, indent=2))
         return
     print(_render_table(games, date_iso, compact, show_header, separator))
+
+
+def _print_at_bat(
+    client: LidomApiClient, game_pk: int, as_json: bool, compact: bool, use_color: bool
+) -> None:
+    snapshot = client.get_current_at_bat(game_pk)
+    if as_json:
+        print(json.dumps(asdict(snapshot), ensure_ascii=False, indent=2))
+        return
+    print(_render_at_bat(snapshot, compact=compact, use_color=use_color))
+
+
+def _print_game_stats(client: LidomApiClient, game_pk: int, as_json: bool) -> None:
+    summary = client.get_game_stats_summary(game_pk)
+    if as_json:
+        print(json.dumps(asdict(summary), ensure_ascii=False, indent=2))
+        return
+    print(_render_game_stats(summary))
+
+
+def _print_league_leaders(client: LidomApiClient, season: int, limit: int, as_json: bool) -> None:
+    if limit <= 0:
+        raise ValueError("El parámetro --limit debe ser mayor que cero.")
+    leaders = client.get_league_hitting_leaders(season=season, limit=limit)
+    if as_json:
+        print(json.dumps([asdict(leader) for leader in leaders], ensure_ascii=False, indent=2))
+        return
+    print(_render_league_leaders(leaders, season))
 
 
 def _print_watch(
@@ -192,6 +337,35 @@ def main() -> int:
     watch_parser.add_argument("--no-header", action="store_true", help="Oculta cabecera de la tabla")
     watch_parser.add_argument("--separator", default=" | ", help="Separador en modo compacto")
 
+    atbat_parser = subparsers.add_parser("atbat", help="Muestra el turno actual (live feed) de un juego")
+    atbat_parser.add_argument("--game-pk", type=int, required=True, help="Identificador gamePk del juego")
+    atbat_parser.add_argument("--json", action="store_true", help="Salida en formato JSON")
+    atbat_parser.add_argument("--compact", action="store_true", help="Vista de una sola línea")
+    atbat_parser.add_argument(
+        "--color",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Activa colores ANSI en la salida detallada (default false)",
+    )
+
+    game_stats_parser = subparsers.add_parser(
+        "game-stats", help="Muestra line score y stats clave de un juego por gamePk"
+    )
+    game_stats_parser.add_argument("--game-pk", type=int, required=True, help="Identificador gamePk del juego")
+    game_stats_parser.add_argument("--json", action="store_true", help="Salida en formato JSON")
+
+    leaders_parser = subparsers.add_parser(
+        "leaders", help="Muestra líderes de bateo (AVG) de la temporada de LIDOM"
+    )
+    leaders_parser.add_argument(
+        "--season",
+        type=int,
+        default=datetime.now(ZoneInfo(DOMINICAN_TZ)).year,
+        help="Temporada (por ejemplo 2025). Default: año actual",
+    )
+    leaders_parser.add_argument("--limit", type=int, default=10, help="Cantidad máxima de jugadores (default 10)")
+    leaders_parser.add_argument("--json", action="store_true", help="Salida en formato JSON")
+
     args = parser.parse_args()
     client = LidomApiClient()
 
@@ -207,6 +381,24 @@ def main() -> int:
                 show_header=not args.no_header,
                 separator=args.separator,
             )
+            return EXIT_OK
+
+        if args.command == "atbat":
+            _print_at_bat(
+                client=client,
+                game_pk=args.game_pk,
+                as_json=args.json,
+                compact=args.compact,
+                use_color=args.color,
+            )
+            return EXIT_OK
+
+        if args.command == "game-stats":
+            _print_game_stats(client=client, game_pk=args.game_pk, as_json=args.json)
+            return EXIT_OK
+
+        if args.command == "leaders":
+            _print_league_leaders(client=client, season=args.season, limit=args.limit, as_json=args.json)
             return EXIT_OK
 
         _print_watch(
@@ -232,3 +424,33 @@ def main() -> int:
     except (TypeError, ValueError) as error:
         print(f"Error de respuesta: {error}", file=sys.stderr)
         return EXIT_RESPONSE_ERROR
+
+
+def _inning_label(half_inning: str, inning: int | None) -> str:
+    half = {"top": "Alta", "bottom": "Baja"}.get(half_inning.lower(), half_inning.capitalize())
+    if not half:
+        half = "-"
+    return f"{half} {inning}" if inning else half
+
+
+def _hand_short(side_description: str) -> str:
+    side = side_description.strip().lower()
+    if side == "left":
+        return "L"
+    if side == "right":
+        return "R"
+    if side == "switch":
+        return "S"
+    return side_description
+
+
+def _format_count(balls: int, strikes: int, use_color: bool) -> str:
+    if not use_color:
+        return f"{balls}-{strikes}"
+    return f"{_style(str(balls), ANSI_YELLOW, True)}-{_style(str(strikes), ANSI_RED, True)}"
+
+
+def _style(value: str, color_code: str, use_color: bool) -> str:
+    if not use_color:
+        return value
+    return f"{color_code}{value}{ANSI_RESET}"

@@ -35,6 +35,9 @@ CLI en Python para consultar resultados en vivo de la Liga Dominicana de Béisbo
 
 - Consulta de resultados por fecha.
 - Modo de actualización continua para seguimiento en vivo.
+- Turno actual (at-bat) en vivo por `gamePk`.
+- Stats clave del juego (R/H/E y AVG por equipo) en vivo por `gamePk`.
+- Líderes de bateo (AVG) por temporada de LIDOM.
 - Filtros por estado de juego y por equipo.
 - Salida legible en tabla para terminal.
 - Salida JSON para integración con scripts.
@@ -105,6 +108,36 @@ Ejecutar un número limitado de iteraciones:
 lidom-live watch --status "In Progress" --iterations 5 --no-clear
 ```
 
+Turno actual del juego (at-bat):
+
+```bash
+lidom-live atbat --game-pk 851509
+```
+
+Vista compacta del turno:
+
+```bash
+lidom-live atbat --game-pk 851509 --compact
+```
+
+Vista detallada con color ANSI:
+
+```bash
+lidom-live atbat --game-pk 851509 --color
+```
+
+Stats del juego en vivo (line score + AVG):
+
+```bash
+lidom-live game-stats --game-pk 851509
+```
+
+Líderes de bateo (AVG) para una temporada:
+
+```bash
+lidom-live leaders --season 2025 --limit 10
+```
+
 ## Salida esperada
 
 ```text
@@ -114,6 +147,42 @@ Visitante                    R  Home                       R  Estado            
 --------------------------------------------------------------------------------------------
 Aguilas Cibaenas             3  Gigantes del Cibao         2  In Progress        19:00
 Tigres del Licey             -  Leones del Escogido        -  Scheduled          19:15
+```
+
+Ejemplo de salida detallada para `atbat`:
+
+```text
+================================================================================
+LIDOM EN VIVO
+Juego: Tigres del Licey vs Leones del Escogido
+Estado: Final | Fecha: 2025-12-05 | Estadio: Estadio Quisqueya Juan Marichal
+Marcador: Tigres del Licey 5 - 3 Leones del Escogido
+Inning: Baja 9 | Outs: 3 | Corredores: Bases vacías
+================================================================================
+
+TURNO ACTUAL
+- Equipo al bate: Leones del Escogido
+- Bateador: Junior Lake (R)
+- Pitcher: Anderson Severino (L)
+- Conteo: 0-2
+- Último pitcheo: In play, out(s) (Sinker, 97.8 mph)
+
+SECUENCIA DEL TURNO
+1) Called Strike (Sinker, 96.0 mph)
+2) Swinging Strike (Sinker, 97.6 mph)
+3) In play, out(s) (Sinker, 97.8 mph)
+
+CONTEXTO RÁPIDO
+- Bateador hoy: 0-4 | BB, K, R
+- Pitcher hoy: 1.2 IP, 0 ER, 2 K, BB
+- Próximo bateador: Erik González
+================================================================================
+```
+
+Ejemplo de salida compacta para `atbat --compact`:
+
+```text
+Tigres del Licey 5-3 Leones del Escogido | Baja 9 | Outs: 3 | Junior Lake (R) vs Anderson Severino (L) | Conteo 0-2 | Último: In play, out(s) (Sinker, 97.8 mph)
 ```
 
 ## Desarrollo
