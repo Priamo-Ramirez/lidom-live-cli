@@ -142,11 +142,11 @@ lidom-live leaders --season 2025 --limit 10
 
 ```text
 LIDOM | Fecha: 2026-10-16 | Actualizado: 2026-10-16 20:14:05 AST
---------------------------------------------------------------------------------------------
-Visitante                    R  Home                       R  Estado             Hora RD
---------------------------------------------------------------------------------------------
-Aguilas Cibaenas             3  Gigantes del Cibao         2  In Progress        19:00
-Tigres del Licey             -  Leones del Escogido        -  Scheduled          19:15
+------------------------------------------------------------------------------------------------------------
+gamePk   Visitante                    R  Home                       R  Estado             Hora RD
+------------------------------------------------------------------------------------------------------------
+851509   Aguilas Cibaenas             3  Gigantes del Cibao         2  In Progress        19:00
+851491   Tigres del Licey             -  Leones del Escogido        -  Scheduled          19:15
 ```
 
 Ejemplo de salida detallada para `atbat`:

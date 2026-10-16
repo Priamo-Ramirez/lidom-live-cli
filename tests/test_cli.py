@@ -40,6 +40,7 @@ def test_render_table_contains_key_fields() -> None:
     assert "Aguilas Cibaenas" in output
     assert "Gigantes del Cibao" in output
     assert "In Progress" in output
+    assert "851509" in output
 
 
 def test_render_table_compact_no_header() -> None:
@@ -64,7 +65,7 @@ def test_render_table_compact_no_header() -> None:
         separator=" / ",
     )
     assert "LIDOM | Fecha:" not in output
-    assert "Aguilas Cibaenas 3-2 Gigantes del Cibao / In Progress / 19:00" in output
+    assert "851509 / Aguilas Cibaenas 3-2 Gigantes del Cibao / In Progress / 19:00" in output
 
 
 def test_filter_games_by_status_and_team() -> None:
