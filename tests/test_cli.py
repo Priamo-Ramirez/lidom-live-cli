@@ -1,7 +1,19 @@
 from __future__ import annotations
 
-from lidom_live_cli.cli import _filter_games, _parse_csv_values, _render_table
-from lidom_live_cli.client import LidomGameScore
+from lidom_live_cli.cli import (
+    _filter_games,
+    _parse_csv_values,
+    _render_at_bat,
+    _render_game_stats,
+    _render_league_leaders,
+    _render_table,
+)
+from lidom_live_cli.client import (
+    AtBatSnapshot,
+    GameStatsSummary,
+    LeagueHittingLeader,
+    LidomGameScore,
+)
 
 
 def test_render_table_contains_key_fields() -> None:
@@ -84,3 +96,73 @@ def test_filter_games_by_status_and_team() -> None:
 
     assert len(filtered) == 1
     assert filtered[0].game_pk == 1
+
+
+def test_render_at_bat_contains_core_fields() -> None:
+    output = _render_at_bat(
+        AtBatSnapshot(
+            game_pk=851509,
+            status="In Progress",
+            inning=4,
+            half_inning="top",
+            batter="Juan Soto",
+            pitcher="Wily Peralta",
+            balls=2,
+            strikes=1,
+            outs=1,
+            last_event="Called Strike",
+        )
+    )
+
+    assert "Juego 851509" in output
+    assert "Bateador: Juan Soto" in output
+    assert "Pitcher: Wily Peralta" in output
+    assert "Conteo: 2-1 | Outs: 1" in output
+
+
+def test_render_game_stats_contains_line_score_and_avg() -> None:
+    output = _render_game_stats(
+        GameStatsSummary(
+            game_pk=851509,
+            status="In Progress",
+            inning_state="Top",
+            current_inning=4,
+            away_team="Aguilas Cibaenas",
+            home_team="Gigantes del Cibao",
+            away_runs=3,
+            home_runs=2,
+            away_hits=7,
+            home_hits=5,
+            away_errors=0,
+            home_errors=1,
+            away_avg=".278",
+            home_avg=".262",
+        )
+    )
+
+    assert "Aguilas Cibaenas vs Gigantes del Cibao" in output
+    assert "Inning: Top 4" in output
+    assert ".278" in output
+    assert ".262" in output
+
+
+def test_render_league_leaders_contains_ranking() -> None:
+    output = _render_league_leaders(
+        [
+            LeagueHittingLeader(
+                rank=1,
+                player_name="Ismael Munguia",
+                team_name="Tigres del Licey",
+                avg=".368",
+                at_bats=95,
+                hits=35,
+                ops=".927",
+            )
+        ],
+        season=2025,
+    )
+
+    assert "Temporada 2025" in output
+    assert "Ismael Munguia" in output
+    assert "Tigres del Licey" in output
+    assert ".368" in output

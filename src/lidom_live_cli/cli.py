@@ -9,9 +9,13 @@ from dataclasses import asdict
 from datetime import datetime
 from time import sleep
 from urllib.error import HTTPError, URLError
+from zoneinfo import ZoneInfo
 
 from .client import (
     DOMINICAN_TZ,
+    AtBatSnapshot,
+    GameStatsSummary,
+    LeagueHittingLeader,
     LidomApiClient,
     LidomGameScore,
     get_today_in_dominican_republic,
@@ -89,6 +93,64 @@ def _render_table(
     return "\n".join(lines)
 
 
+def _render_at_bat(snapshot: AtBatSnapshot) -> str:
+    inning = f"{snapshot.half_inning.capitalize()} {snapshot.inning}" if snapshot.inning else "N/D"
+    return "\n".join(
+        [
+            f"Juego {snapshot.game_pk} | Estado: {snapshot.status}",
+            f"Inning: {inning}",
+            f"Bateador: {snapshot.batter}",
+            f"Pitcher: {snapshot.pitcher}",
+            f"Conteo: {snapshot.balls}-{snapshot.strikes} | Outs: {snapshot.outs}",
+            f"Último evento: {snapshot.last_event}",
+        ]
+    )
+
+
+def _render_game_stats(summary: GameStatsSummary) -> str:
+    lines = [
+        f"Juego {summary.game_pk} | {summary.away_team} vs {summary.home_team}",
+        f"Estado: {summary.status}",
+    ]
+    if summary.current_inning:
+        lines.append(f"Inning: {summary.inning_state} {summary.current_inning}")
+    lines.extend(
+        [
+            "",
+            f"{'Equipo':<26} {'R':>2} {'H':>2} {'E':>2} {'AVG':>6}",
+            "-" * 44,
+            (
+                f"{summary.away_team:<26} {_score(summary.away_runs):>2} "
+                f"{_score(summary.away_hits):>2} {_score(summary.away_errors):>2} "
+                f"{summary.away_avg or '-':>6}"
+            ),
+            (
+                f"{summary.home_team:<26} {_score(summary.home_runs):>2} "
+                f"{_score(summary.home_hits):>2} {_score(summary.home_errors):>2} "
+                f"{summary.home_avg or '-':>6}"
+            ),
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _render_league_leaders(leaders: list[LeagueHittingLeader], season: int) -> str:
+    lines = [f"Líderes de bateo LIDOM | Temporada {season}", "-" * 74]
+    if not leaders:
+        lines.append("Sin estadísticas de bateo disponibles para esta temporada.")
+        return "\n".join(lines)
+
+    lines.append(f"{'#':>2} {'Jugador':<28} {'Equipo':<22} {'AVG':>6} {'AB':>4} {'H':>4} {'OPS':>6}")
+    lines.append("-" * 74)
+    for leader in leaders:
+        lines.append(
+            f"{leader.rank:>2} {leader.player_name:<28} {leader.team_name:<22} "
+            f"{leader.avg:>6} {_score(leader.at_bats):>4} {_score(leader.hits):>4} "
+            f"{leader.ops or '-':>6}"
+        )
+    return "\n".join(lines)
+
+
 def _fetch_filtered_games(
     client: LidomApiClient, date_iso: str, status_filter: str | None, team_filter: str | None
 ) -> list[LidomGameScore]:
@@ -116,6 +178,32 @@ def _print_now(
         print(json.dumps([asdict(game) for game in games], ensure_ascii=False, indent=2))
         return
     print(_render_table(games, date_iso, compact, show_header, separator))
+
+
+def _print_at_bat(client: LidomApiClient, game_pk: int, as_json: bool) -> None:
+    snapshot = client.get_current_at_bat(game_pk)
+    if as_json:
+        print(json.dumps(asdict(snapshot), ensure_ascii=False, indent=2))
+        return
+    print(_render_at_bat(snapshot))
+
+
+def _print_game_stats(client: LidomApiClient, game_pk: int, as_json: bool) -> None:
+    summary = client.get_game_stats_summary(game_pk)
+    if as_json:
+        print(json.dumps(asdict(summary), ensure_ascii=False, indent=2))
+        return
+    print(_render_game_stats(summary))
+
+
+def _print_league_leaders(client: LidomApiClient, season: int, limit: int, as_json: bool) -> None:
+    if limit <= 0:
+        raise ValueError("El parámetro --limit debe ser mayor que cero.")
+    leaders = client.get_league_hitting_leaders(season=season, limit=limit)
+    if as_json:
+        print(json.dumps([asdict(leader) for leader in leaders], ensure_ascii=False, indent=2))
+        return
+    print(_render_league_leaders(leaders, season))
 
 
 def _print_watch(
@@ -192,6 +280,28 @@ def main() -> int:
     watch_parser.add_argument("--no-header", action="store_true", help="Oculta cabecera de la tabla")
     watch_parser.add_argument("--separator", default=" | ", help="Separador en modo compacto")
 
+    atbat_parser = subparsers.add_parser("atbat", help="Muestra el turno actual (live feed) de un juego")
+    atbat_parser.add_argument("--game-pk", type=int, required=True, help="Identificador gamePk del juego")
+    atbat_parser.add_argument("--json", action="store_true", help="Salida en formato JSON")
+
+    game_stats_parser = subparsers.add_parser(
+        "game-stats", help="Muestra line score y stats clave de un juego por gamePk"
+    )
+    game_stats_parser.add_argument("--game-pk", type=int, required=True, help="Identificador gamePk del juego")
+    game_stats_parser.add_argument("--json", action="store_true", help="Salida en formato JSON")
+
+    leaders_parser = subparsers.add_parser(
+        "leaders", help="Muestra líderes de bateo (AVG) de la temporada de LIDOM"
+    )
+    leaders_parser.add_argument(
+        "--season",
+        type=int,
+        default=datetime.now(ZoneInfo(DOMINICAN_TZ)).year,
+        help="Temporada (por ejemplo 2025). Default: año actual",
+    )
+    leaders_parser.add_argument("--limit", type=int, default=10, help="Cantidad máxima de jugadores (default 10)")
+    leaders_parser.add_argument("--json", action="store_true", help="Salida en formato JSON")
+
     args = parser.parse_args()
     client = LidomApiClient()
 
@@ -207,6 +317,18 @@ def main() -> int:
                 show_header=not args.no_header,
                 separator=args.separator,
             )
+            return EXIT_OK
+
+        if args.command == "atbat":
+            _print_at_bat(client=client, game_pk=args.game_pk, as_json=args.json)
+            return EXIT_OK
+
+        if args.command == "game-stats":
+            _print_game_stats(client=client, game_pk=args.game_pk, as_json=args.json)
+            return EXIT_OK
+
+        if args.command == "leaders":
+            _print_league_leaders(client=client, season=args.season, limit=args.limit, as_json=args.json)
             return EXIT_OK
 
         _print_watch(

@@ -1,0 +1,36 @@
+{
+  "stats": [
+    {
+      "splits": [
+        {
+          "player": {
+            "fullName": "Ismael Munguia"
+          },
+          "team": {
+            "name": "Tigres del Licey"
+          },
+          "stat": {
+            "avg": ".368",
+            "atBats": 95,
+            "hits": 35,
+            "ops": ".927"
+          }
+        },
+        {
+          "player": {
+            "fullName": "Mel Rojas Jr."
+          },
+          "team": {
+            "name": "Leones del Escogido"
+          },
+          "stat": {
+            "avg": ".352",
+            "atBats": 88,
+            "hits": 31,
+            "ops": ".903"
+          }
+        }
+      ]
+    }
+  ]
+}
