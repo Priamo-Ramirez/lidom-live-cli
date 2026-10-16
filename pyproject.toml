@@ -1,0 +1,31 @@
+[project]
+name = "lidom-live-cli"
+version = "0.1.0"
+description = "CLI en Python para consultar resultados en vivo de LIDOM desde MLB Stats API"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "Cursor Agent" }
+]
+dependencies = []
+
+[project.optional-dependencies]
+test = [
+  "pytest==9.1.1",
+]
+
+[project.scripts]
+lidom-live = "lidom_live_cli.cli:main"
+
+[build-system]
+requires = ["setuptools>=80.0.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

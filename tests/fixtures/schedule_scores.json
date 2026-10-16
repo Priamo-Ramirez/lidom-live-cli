@@ -1,0 +1,51 @@
+{
+  "dates": [
+    {
+      "date": "2026-10-16",
+      "games": [
+        {
+          "gamePk": 851509,
+          "officialDate": "2026-10-16",
+          "gameDate": "2026-10-16T23:00:00Z",
+          "status": {
+            "detailedState": "In Progress"
+          },
+          "teams": {
+            "away": {
+              "team": {
+                "name": "Aguilas Cibaenas"
+              },
+              "score": 3
+            },
+            "home": {
+              "team": {
+                "name": "Gigantes del Cibao"
+              },
+              "score": 2
+            }
+          }
+        },
+        {
+          "gamePk": 851491,
+          "officialDate": "2026-10-16",
+          "gameDate": "2026-10-16T23:15:00Z",
+          "status": {
+            "detailedState": "Scheduled"
+          },
+          "teams": {
+            "away": {
+              "team": {
+                "name": "Tigres del Licey"
+              }
+            },
+            "home": {
+              "team": {
+                "name": "Leones del Escogido"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
