@@ -10,6 +10,7 @@
   <a href="https://github.com/Priamo-Ramirez/lidom-live-cli/actions/workflows/ci.yml">
     <img src="https://github.com/Priamo-Ramirez/lidom-live-cli/actions/workflows/ci.yml/badge.svg" alt="CI" />
   </a>
+  <img src="https://img.shields.io/github/v/release/Priamo-Ramirez/lidom-live-cli?display_name=tag" alt="Release" />
   <img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+" />
   <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License" />
   <img src="https://img.shields.io/badge/API-MLB%20Stats-1f4f99.svg" alt="MLB Stats API" />
