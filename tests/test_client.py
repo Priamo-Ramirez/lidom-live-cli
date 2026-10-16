@@ -29,14 +29,30 @@ def test_parse_current_at_bat_maps_fields() -> None:
 
     assert snapshot.game_pk == 851509
     assert snapshot.status == "In Progress"
+    assert snapshot.official_date == "2026-10-16"
+    assert snapshot.venue == "Estadio Quisqueya Juan Marichal"
+    assert snapshot.away_team == "Aguilas Cibaenas"
+    assert snapshot.home_team == "Gigantes del Cibao"
+    assert snapshot.away_runs == 3
+    assert snapshot.home_runs == 2
     assert snapshot.inning == 4
     assert snapshot.half_inning == "top"
+    assert snapshot.batting_team == "Aguilas Cibaenas"
+    assert snapshot.runners == "1B, 2B"
     assert snapshot.batter == "Juan Soto"
+    assert snapshot.batter_side == "Left"
     assert snapshot.pitcher == "Wily Peralta"
+    assert snapshot.pitcher_hand == "Right"
     assert snapshot.balls == 2
     assert snapshot.strikes == 1
     assert snapshot.outs == 1
     assert snapshot.last_event == "Called Strike"
+    assert snapshot.last_pitch_type == "Slider"
+    assert snapshot.last_pitch_speed == 84.1
+    assert snapshot.on_deck == "Junior Lake"
+    assert snapshot.batter_today == "3-1, BB"
+    assert snapshot.pitcher_today == "1.1 IP, 1 H, 0 ER, 2 K"
+    assert snapshot.event_sequence == ["Ball (Fastball, 95.2 mph)", "Called Strike (Slider, 84.1 mph)"]
 
 
 def test_parse_game_stats_summary_maps_linescore_and_avg() -> None:

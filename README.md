@@ -114,6 +114,18 @@ Turno actual del juego (at-bat):
 lidom-live atbat --game-pk 851509
 ```
 
+Vista compacta del turno:
+
+```bash
+lidom-live atbat --game-pk 851509 --compact
+```
+
+Vista detallada con color ANSI:
+
+```bash
+lidom-live atbat --game-pk 851509 --color
+```
+
 Stats del juego en vivo (line score + AVG):
 
 ```bash

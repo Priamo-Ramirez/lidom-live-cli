@@ -103,21 +103,83 @@ def test_render_at_bat_contains_core_fields() -> None:
         AtBatSnapshot(
             game_pk=851509,
             status="In Progress",
+            official_date="2026-10-16",
+            venue="Estadio Quisqueya Juan Marichal",
+            away_team="Tigres del Licey",
+            home_team="Leones del Escogido",
+            away_runs=3,
+            home_runs=2,
             inning=4,
             half_inning="top",
+            batting_team="Tigres del Licey",
+            runners="1B, 2B",
             batter="Juan Soto",
+            batter_side="Left",
             pitcher="Wily Peralta",
+            pitcher_hand="Right",
             balls=2,
             strikes=1,
             outs=1,
             last_event="Called Strike",
-        )
+            last_pitch_type="Slider",
+            last_pitch_speed=84.1,
+            on_deck="Junior Lake",
+            batter_today="3-1, BB",
+            pitcher_today="1.1 IP, 1 H, 0 ER, 2 K",
+            event_sequence=["Ball (Fastball, 95.2 mph)", "Called Strike (Slider, 84.1 mph)"],
+        ),
+        compact=False,
+        use_color=False,
     )
 
-    assert "Juego 851509" in output
-    assert "Bateador: Juan Soto" in output
-    assert "Pitcher: Wily Peralta" in output
-    assert "Conteo: 2-1 | Outs: 1" in output
+    assert "Juego: Tigres del Licey vs Leones del Escogido" in output
+    assert "Marcador: Tigres del Licey 3 - 2 Leones del Escogido" in output
+    assert "Inning: Alta 4 | Outs: 1 | Corredores: 1B, 2B" in output
+    assert "- Bateador: Juan Soto (L)" in output
+    assert "- Pitcher: Wily Peralta (R)" in output
+    assert "- Conteo: 2-1" in output
+    assert "2) Called Strike (Slider, 84.1 mph)" in output
+    assert "- Próximo bateador: Junior Lake" in output
+
+
+def test_render_at_bat_compact_mode() -> None:
+    output = _render_at_bat(
+        AtBatSnapshot(
+            game_pk=851509,
+            status="In Progress",
+            official_date="2026-10-16",
+            venue="Estadio Quisqueya Juan Marichal",
+            away_team="Tigres del Licey",
+            home_team="Leones del Escogido",
+            away_runs=3,
+            home_runs=2,
+            inning=7,
+            half_inning="bottom",
+            batting_team="Leones del Escogido",
+            runners="Bases vacías",
+            batter="Emilio Bonifacio",
+            batter_side="Switch",
+            pitcher="Rafael Montero",
+            pitcher_hand="Right",
+            balls=2,
+            strikes=2,
+            outs=1,
+            last_event="Foul",
+            last_pitch_type="Slider",
+            last_pitch_speed=84.0,
+            on_deck="Junior Lake",
+            batter_today="1-3, BB",
+            pitcher_today="1.0 IP, 0 ER",
+            event_sequence=["Ball", "Called Strike", "Foul"],
+        ),
+        compact=True,
+        use_color=False,
+    )
+
+    assert "Tigres del Licey 3-2 Leones del Escogido" in output
+    assert "Baja 7" in output
+    assert "Emilio Bonifacio (S) vs Rafael Montero (R)" in output
+    assert "Conteo 2-2" in output
 
 
 def test_render_game_stats_contains_line_score_and_avg() -> None:
