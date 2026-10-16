@@ -7,6 +7,7 @@ from lidom_live_cli.cli import (
     _render_game_stats,
     _render_league_leaders,
     _render_table,
+    _watch_at_bat,
 )
 from lidom_live_cli.client import (
     AtBatSnapshot,
@@ -229,3 +230,45 @@ def test_render_league_leaders_contains_ranking() -> None:
     assert "Ismael Munguia" in output
     assert "Tigres del Licey" in output
     assert ".368" in output
+
+
+def test_watch_at_bat_rejects_non_positive_interval() -> None:
+    class DummyClient:
+        pass
+
+    try:
+        _watch_at_bat(  # type: ignore[arg-type]
+            client=DummyClient(),
+            game_pk=1,
+            as_json=False,
+            compact=False,
+            use_color=False,
+            interval_seconds=0,
+            iterations=1,
+            clear_screen=False,
+        )
+    except ValueError as error:
+        assert "--interval" in str(error)
+    else:
+        raise AssertionError("Se esperaba ValueError para interval_seconds=0")
+
+
+def test_watch_at_bat_rejects_negative_iterations() -> None:
+    class DummyClient:
+        pass
+
+    try:
+        _watch_at_bat(  # type: ignore[arg-type]
+            client=DummyClient(),
+            game_pk=1,
+            as_json=False,
+            compact=False,
+            use_color=False,
+            interval_seconds=1,
+            iterations=-1,
+            clear_screen=False,
+        )
+    except ValueError as error:
+        assert "--iterations" in str(error)
+    else:
+        raise AssertionError("Se esperaba ValueError para iterations=-1")

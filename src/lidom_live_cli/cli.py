@@ -245,6 +245,36 @@ def _print_at_bat(
     print(_render_at_bat(snapshot, compact=compact, use_color=use_color))
 
 
+def _watch_at_bat(
+    client: LidomApiClient,
+    game_pk: int,
+    as_json: bool,
+    compact: bool,
+    use_color: bool,
+    interval_seconds: int,
+    iterations: int,
+    clear_screen: bool,
+) -> None:
+    if interval_seconds <= 0:
+        raise ValueError("El parámetro --interval debe ser mayor que cero.")
+    if iterations < 0:
+        raise ValueError("El parámetro --iterations no puede ser negativo.")
+
+    loop_count = 0
+    while iterations == 0 or loop_count < iterations:
+        snapshot = client.get_current_at_bat(game_pk)
+        if as_json:
+            print(json.dumps(asdict(snapshot), ensure_ascii=False, indent=2))
+        else:
+            if clear_screen:
+                print("\033c", end="")
+            print(_render_at_bat(snapshot, compact=compact, use_color=use_color))
+        loop_count += 1
+        if iterations != 0 and loop_count >= iterations:
+            break
+        sleep(interval_seconds)
+
+
 def _print_game_stats(client: LidomApiClient, game_pk: int, as_json: bool) -> None:
     summary = client.get_game_stats_summary(game_pk)
     if as_json:
@@ -341,6 +371,25 @@ def main() -> int:
     atbat_parser.add_argument("--game-pk", type=int, required=True, help="Identificador gamePk del juego")
     atbat_parser.add_argument("--json", action="store_true", help="Salida en formato JSON")
     atbat_parser.add_argument("--compact", action="store_true", help="Vista de una sola línea")
+    atbat_parser.add_argument("--watch", action="store_true", help="Actualiza el turno continuamente")
+    atbat_parser.add_argument(
+        "--interval",
+        type=int,
+        default=10,
+        help="Intervalo en segundos entre actualizaciones en modo --watch (default 10)",
+    )
+    atbat_parser.add_argument(
+        "--iterations",
+        type=int,
+        default=0,
+        help="Cantidad de actualizaciones en modo --watch. 0 significa infinito (default 0)",
+    )
+    atbat_parser.add_argument(
+        "--clear",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Limpia pantalla entre actualizaciones en modo --watch (default true)",
+    )
     atbat_parser.add_argument(
         "--color",
         action=argparse.BooleanOptionalAction,
@@ -384,13 +433,25 @@ def main() -> int:
             return EXIT_OK
 
         if args.command == "atbat":
-            _print_at_bat(
-                client=client,
-                game_pk=args.game_pk,
-                as_json=args.json,
-                compact=args.compact,
-                use_color=args.color,
-            )
+            if args.watch:
+                _watch_at_bat(
+                    client=client,
+                    game_pk=args.game_pk,
+                    as_json=args.json,
+                    compact=args.compact,
+                    use_color=args.color,
+                    interval_seconds=args.interval,
+                    iterations=args.iterations,
+                    clear_screen=args.clear,
+                )
+            else:
+                _print_at_bat(
+                    client=client,
+                    game_pk=args.game_pk,
+                    as_json=args.json,
+                    compact=args.compact,
+                    use_color=args.color,
+                )
             return EXIT_OK
 
         if args.command == "game-stats":
