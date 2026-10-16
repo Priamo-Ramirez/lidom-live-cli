@@ -73,14 +73,14 @@ def _render_table(
     if show_header:
         stamp = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
         lines.append(f"LIDOM | Fecha: {date_iso} | Actualizado: {stamp}")
-        lines.append("-" * 92)
+        lines.append("-" * 108)
         if compact:
-            lines.append("Partido | Estado | Hora RD")
+            lines.append("gamePk | Partido | Estado | Hora RD")
         else:
             lines.append(
-                f"{'Visitante':<26} {'R':>2}  {'Home':<26} {'R':>2}  {'Estado':<18} {'Hora RD'}"
+                f"{'gamePk':<8} {'Visitante':<26} {'R':>2}  {'Home':<26} {'R':>2}  {'Estado':<18} {'Hora RD'}"
             )
-        lines.append("-" * 92)
+        lines.append("-" * 108)
 
     if not games:
         lines.append("Sin juegos para la fecha indicada.")
@@ -88,12 +88,12 @@ def _render_table(
         for game in games:
             if compact:
                 lines.append(
-                    f"{game.away_team} {_score(game.away_score)}-{_score(game.home_score)} "
+                    f"{game.game_pk}{separator}{game.away_team} {_score(game.away_score)}-{_score(game.home_score)} "
                     f"{game.home_team}{separator}{game.status}{separator}{game.start_time_rd}"
                 )
             else:
                 lines.append(
-                    f"{game.away_team:<26} {_score(game.away_score):>2}  "
+                    f"{game.game_pk:<8} {game.away_team:<26} {_score(game.away_score):>2}  "
                     f"{game.home_team:<26} {_score(game.home_score):>2}  "
                     f"{game.status:<18} {game.start_time_rd}"
                 )
