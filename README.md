@@ -35,6 +35,7 @@ CLI en Python para consultar resultados en vivo de la Liga Dominicana de Béisbo
 
 - Consulta de resultados por fecha.
 - Modo de actualización continua para seguimiento en vivo.
+- Filtros por estado de juego y por equipo.
 - Salida legible en tabla para terminal.
 - Salida JSON para integración con scripts.
 - Reintentos automáticos con backoff para errores transitorios de red.
@@ -74,6 +75,18 @@ Salida JSON:
 lidom-live now --date 2026-10-16 --json
 ```
 
+Filtrar por estado y equipo:
+
+```bash
+lidom-live now --status "In Progress,Final" --team "Licey"
+```
+
+Vista compacta sin cabecera:
+
+```bash
+lidom-live now --compact --no-header
+```
+
 Modo en vivo (actualiza cada 20 segundos):
 
 ```bash
@@ -84,6 +97,12 @@ Cambiar frecuencia de actualización:
 
 ```bash
 lidom-live watch --interval 10
+```
+
+Ejecutar un número limitado de iteraciones:
+
+```bash
+lidom-live watch --status "In Progress" --iterations 5 --no-clear
 ```
 
 ## Salida esperada
@@ -123,6 +142,12 @@ Workflow de GitHub Actions:
 
 - `lint` con Ruff
 - `tests` con matriz Python 3.10/3.11/3.12
+
+## Códigos de salida
+
+- `0`: ejecución exitosa.
+- `3`: error de red o respuesta HTTP del API.
+- `4`: error de formato de respuesta.
 
 ## Comunidad
 
