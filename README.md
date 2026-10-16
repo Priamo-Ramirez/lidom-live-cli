@@ -114,6 +114,12 @@ Turno actual del juego (at-bat):
 lidom-live atbat --game-pk 851509
 ```
 
+Seguimiento continuo del turno (modo watch):
+
+```bash
+lidom-live atbat --game-pk 851509 --watch --interval 10
+```
+
 Vista compacta del turno:
 
 ```bash
@@ -124,6 +130,12 @@ Vista detallada con color ANSI:
 
 ```bash
 lidom-live atbat --game-pk 851509 --color
+```
+
+Modo watch en vista compacta (5 iteraciones):
+
+```bash
+lidom-live atbat --game-pk 851509 --watch --compact --iterations 5 --no-clear
 ```
 
 Stats del juego en vivo (line score + AVG):
