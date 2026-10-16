@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from lidom_live_cli.client import LidomGameScore
 from lidom_live_cli.cli import _render_table
+from lidom_live_cli.client import LidomGameScore
 
 
 def test_render_table_contains_key_fields() -> None:
