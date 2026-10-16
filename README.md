@@ -149,6 +149,42 @@ Aguilas Cibaenas             3  Gigantes del Cibao         2  In Progress       
 Tigres del Licey             -  Leones del Escogido        -  Scheduled          19:15
 ```
 
+Ejemplo de salida detallada para `atbat`:
+
+```text
+================================================================================
+LIDOM EN VIVO
+Juego: Tigres del Licey vs Leones del Escogido
+Estado: Final | Fecha: 2025-12-05 | Estadio: Estadio Quisqueya Juan Marichal
+Marcador: Tigres del Licey 5 - 3 Leones del Escogido
+Inning: Baja 9 | Outs: 3 | Corredores: Bases vacías
+================================================================================
+
+TURNO ACTUAL
+- Equipo al bate: Leones del Escogido
+- Bateador: Junior Lake (R)
+- Pitcher: Anderson Severino (L)
+- Conteo: 0-2
+- Último pitcheo: In play, out(s) (Sinker, 97.8 mph)
+
+SECUENCIA DEL TURNO
+1) Called Strike (Sinker, 96.0 mph)
+2) Swinging Strike (Sinker, 97.6 mph)
+3) In play, out(s) (Sinker, 97.8 mph)
+
+CONTEXTO RÁPIDO
+- Bateador hoy: 0-4 | BB, K, R
+- Pitcher hoy: 1.2 IP, 0 ER, 2 K, BB
+- Próximo bateador: Erik González
+================================================================================
+```
+
+Ejemplo de salida compacta para `atbat --compact`:
+
+```text
+Tigres del Licey 5-3 Leones del Escogido | Baja 9 | Outs: 3 | Junior Lake (R) vs Anderson Severino (L) | Conteo 0-2 | Último: In play, out(s) (Sinker, 97.8 mph)
+```
+
 ## Desarrollo
 
 Instalar dependencias de desarrollo:
