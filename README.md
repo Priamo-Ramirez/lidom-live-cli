@@ -1,6 +1,42 @@
 # LIDOM Live CLI
 
-CLI en Python para consultar resultados de la Liga Dominicana de Béisbol (LIDOM) usando MLB Stats API.
+<p align="center">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/a/a6/Major_League_Baseball_logo.svg" alt="MLB" height="64" />
+  &nbsp;&nbsp;&nbsp;
+  <img src="https://lidom.com/especiales/countdown-2627/Logo-Lidom.svg" alt="LIDOM" height="64" />
+</p>
+
+<p align="center">
+  <a href="https://github.com/Priamo-Ramirez/lidom-live-cli/actions/workflows/ci.yml">
+    <img src="https://github.com/Priamo-Ramirez/lidom-live-cli/actions/workflows/ci.yml/badge.svg" alt="CI" />
+  </a>
+  <img src="https://img.shields.io/badge/python-3.10%2B-blue.svg" alt="Python 3.10+" />
+  <img src="https://img.shields.io/badge/license-MIT-green.svg" alt="MIT License" />
+  <img src="https://img.shields.io/badge/API-MLB%20Stats-1f4f99.svg" alt="MLB Stats API" />
+</p>
+
+CLI en Python para consultar resultados en vivo de la Liga Dominicana de Béisbol (LIDOM) usando MLB Stats API.
+
+## Tabla de contenido
+
+- [Características](#características)
+- [Identificadores de API](#identificadores-de-api)
+- [Requisitos](#requisitos)
+- [Instalación](#instalación)
+- [Uso](#uso)
+- [Salida esperada](#salida-esperada)
+- [Desarrollo](#desarrollo)
+- [CI](#ci)
+- [Comunidad](#comunidad)
+- [Licencia](#licencia)
+
+## Características
+
+- Consulta de resultados por fecha.
+- Modo de actualización continua para seguimiento en vivo.
+- Salida legible en tabla para terminal.
+- Salida JSON para integración con scripts.
+- Reintentos automáticos con backoff para errores transitorios de red.
 
 ## Identificadores de API
 
@@ -11,7 +47,7 @@ CLI en Python para consultar resultados de la Liga Dominicana de Béisbol (LIDOM
 
 - Python 3.10+
 
-## Instalación local
+## Instalación
 
 ```bash
 python3 -m pip install -e .
@@ -49,16 +85,51 @@ Cambiar frecuencia de actualización:
 lidom-live watch --interval 10
 ```
 
+## Salida esperada
+
+```text
+LIDOM | Fecha: 2026-10-16 | Actualizado: 2026-10-16 20:14:05 AST
+--------------------------------------------------------------------------------------------
+Visitante                    R  Home                       R  Estado             Hora RD
+--------------------------------------------------------------------------------------------
+Aguilas Cibaenas             3  Gigantes del Cibao         2  In Progress        19:00
+Tigres del Licey             -  Leones del Escogido        -  Scheduled          19:15
+```
+
 ## Desarrollo
 
-Instalar dependencias de tests:
+Instalar dependencias de desarrollo:
 
 ```bash
 python3 -m pip install -e ".[test]"
 ```
 
-Ejecutar tests:
+Lint:
+
+```bash
+ruff check .
+```
+
+Tests:
 
 ```bash
 pytest -q
 ```
+
+## CI
+
+Workflow de GitHub Actions:
+
+- `lint` con Ruff
+- `tests` con matriz Python 3.10/3.11/3.12
+
+## Comunidad
+
+- Guía de contribución: [CONTRIBUTING.md](CONTRIBUTING.md)
+- Código de conducta: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- Reporte de seguridad: [SECURITY.md](SECURITY.md)
+- Plantilla de PR: [.github/pull_request_template.md](.github/pull_request_template.md)
+
+## Licencia
+
+Este proyecto se distribuye bajo licencia MIT. Ver [LICENSE](LICENSE).
