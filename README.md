@@ -35,6 +35,9 @@ CLI en Python para consultar resultados en vivo de la Liga Dominicana de Béisbo
 
 - Consulta de resultados por fecha.
 - Modo de actualización continua para seguimiento en vivo.
+- Turno actual (at-bat) en vivo por `gamePk`.
+- Stats clave del juego (R/H/E y AVG por equipo) en vivo por `gamePk`.
+- Líderes de bateo (AVG) por temporada de LIDOM.
 - Filtros por estado de juego y por equipo.
 - Salida legible en tabla para terminal.
 - Salida JSON para integración con scripts.
@@ -103,6 +106,24 @@ Ejecutar un número limitado de iteraciones:
 
 ```bash
 lidom-live watch --status "In Progress" --iterations 5 --no-clear
+```
+
+Turno actual del juego (at-bat):
+
+```bash
+lidom-live atbat --game-pk 851509
+```
+
+Stats del juego en vivo (line score + AVG):
+
+```bash
+lidom-live game-stats --game-pk 851509
+```
+
+Líderes de bateo (AVG) para una temporada:
+
+```bash
+lidom-live leaders --season 2025 --limit 10
 ```
 
 ## Salida esperada

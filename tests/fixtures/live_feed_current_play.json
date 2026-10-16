@@ -1,0 +1,85 @@
+{
+  "gamePk": 851509,
+  "gameData": {
+    "status": {
+      "detailedState": "In Progress"
+    },
+    "teams": {
+      "away": {
+        "name": "Aguilas Cibaenas"
+      },
+      "home": {
+        "name": "Gigantes del Cibao"
+      }
+    }
+  },
+  "liveData": {
+    "linescore": {
+      "currentInning": 4,
+      "inningState": "Top",
+      "teams": {
+        "away": {
+          "runs": 3,
+          "hits": 7,
+          "errors": 0
+        },
+        "home": {
+          "runs": 2,
+          "hits": 5,
+          "errors": 1
+        }
+      }
+    },
+    "boxscore": {
+      "teams": {
+        "away": {
+          "teamStats": {
+            "batting": {
+              "avg": ".278"
+            }
+          }
+        },
+        "home": {
+          "teamStats": {
+            "batting": {
+              "avg": ".262"
+            }
+          }
+        }
+      }
+    },
+    "plays": {
+      "currentPlay": {
+        "about": {
+          "inning": 4,
+          "halfInning": "top"
+        },
+        "matchup": {
+          "batter": {
+            "fullName": "Juan Soto"
+          },
+          "pitcher": {
+            "fullName": "Wily Peralta"
+          }
+        },
+        "count": {
+          "balls": 2,
+          "strikes": 1,
+          "outs": 1
+        },
+        "playEvents": [
+          {
+            "details": {
+              "description": "Ball"
+            }
+          },
+          {
+            "details": {
+              "description": "Called Strike"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
