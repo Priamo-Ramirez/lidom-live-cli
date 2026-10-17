@@ -195,6 +195,17 @@ class LidomApiClient:
     def get_today_schedule(self) -> dict[str, Any]:
         return self.get_schedule(get_today_in_dominican_republic())
 
+    def get_schedule_range(self, start_date_iso: str, end_date_iso: str) -> dict[str, Any]:
+        return self._get_json(
+            "/schedule",
+            params={
+                "sportId": WINTER_LEAGUES_SPORT_ID,
+                "leagueId": LIDOM_LEAGUE_ID,
+                "startDate": start_date_iso,
+                "endDate": end_date_iso,
+            },
+        )
+
     def get_live_feed(self, game_pk: int) -> dict[str, Any]:
         return self._get_json(f".1/game/{game_pk}/feed/live")
 
@@ -236,21 +247,22 @@ class LidomApiClient:
             return []
 
         games: list[LidomGameScore] = []
-        for item in dates[0].get("games", []):
-            away_info = item.get("teams", {}).get("away", {})
-            home_info = item.get("teams", {}).get("home", {})
-            games.append(
-                LidomGameScore(
-                    game_pk=item.get("gamePk", 0),
-                    official_date=item.get("officialDate", ""),
-                    start_time_rd=_to_rd_time(item.get("gameDate", "")),
-                    away_team=away_info.get("team", {}).get("name", ""),
-                    home_team=home_info.get("team", {}).get("name", ""),
-                    away_score=away_info.get("score"),
-                    home_score=home_info.get("score"),
-                    status=item.get("status", {}).get("detailedState", ""),
+        for date_item in dates:
+            for item in date_item.get("games", []):
+                away_info = item.get("teams", {}).get("away", {})
+                home_info = item.get("teams", {}).get("home", {})
+                games.append(
+                    LidomGameScore(
+                        game_pk=item.get("gamePk", 0),
+                        official_date=item.get("officialDate", ""),
+                        start_time_rd=_to_rd_time(item.get("gameDate", "")),
+                        away_team=away_info.get("team", {}).get("name", ""),
+                        home_team=home_info.get("team", {}).get("name", ""),
+                        away_score=away_info.get("score"),
+                        home_score=home_info.get("score"),
+                        status=item.get("status", {}).get("detailedState", ""),
+                    )
                 )
-            )
         return games
 
     @staticmethod

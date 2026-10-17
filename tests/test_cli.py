@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+from datetime import date
+
 from lidom_live_cli.cli import (
     _filter_games,
     _filter_play_by_play,
     _parse_csv_values,
     _render_at_bat,
     _render_game_stats,
+    _render_history_table,
     _render_league_leaders,
     _render_play_by_play,
     _render_table,
+    _resolve_period_dates,
     _watch_at_bat,
 )
 from lidom_live_cli.client import (
@@ -71,6 +75,43 @@ def test_render_table_compact_no_header() -> None:
     )
     assert "LIDOM | Fecha:" not in output
     assert "851509 / Aguilas Cibaenas 3-2 Gigantes del Cibao / In Progress / 19:00" in output
+
+
+def test_render_history_table_compact_no_header() -> None:
+    games = [
+        LidomGameScore(
+            game_pk=851400,
+            official_date="2026-10-15",
+            start_time_rd="19:00",
+            away_team="Tigres del Licey",
+            home_team="Leones del Escogido",
+            away_score=5,
+            home_score=3,
+            status="Final",
+        ),
+        LidomGameScore(
+            game_pk=851401,
+            official_date="2026-10-16",
+            start_time_rd="19:15",
+            away_team="Aguilas Cibaenas",
+            home_team="Gigantes del Cibao",
+            away_score=2,
+            home_score=1,
+            status="Final",
+        ),
+    ]
+
+    output = _render_history_table(
+        games=games,
+        start_date_iso="2026-10-15",
+        end_date_iso="2026-10-16",
+        compact=True,
+        show_header=False,
+        separator=" / ",
+    )
+    assert "LIDOM | Rango:" not in output
+    assert "2026-10-15 / 851400 / Tigres del Licey 5-3 Leones del Escogido / Final / 19:00" in output
+    assert "2026-10-16 / 851401 / Aguilas Cibaenas 2-1 Gigantes del Cibao / Final / 19:15" in output
 
 
 def test_filter_games_by_status_and_team() -> None:
@@ -371,3 +412,10 @@ def test_filter_play_by_play_supports_inning_and_team() -> None:
     by_team = _filter_play_by_play(plays, inning=None, team_query="licey")
     assert len(by_team) == 1
     assert by_team[0].at_bat_index == 0
+
+
+def test_resolve_period_dates() -> None:
+    base_day = date(2026, 10, 17)
+    assert _resolve_period_dates("yesterday", today=base_day) == (date(2026, 10, 16), date(2026, 10, 16))
+    assert _resolve_period_dates("last-week", today=base_day) == (date(2026, 10, 10), date(2026, 10, 16))
+    assert _resolve_period_dates("last-month", today=base_day) == (date(2026, 9, 17), date(2026, 10, 16))

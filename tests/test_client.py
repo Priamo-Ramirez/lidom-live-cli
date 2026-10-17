@@ -23,6 +23,17 @@ def test_parse_scores_maps_fields() -> None:
     assert games[1].away_score is None
 
 
+def test_parse_scores_handles_multiple_dates() -> None:
+    payload = _load_fixture("schedule_scores_range.json")
+    games = LidomApiClient.parse_scores(payload)
+
+    assert len(games) == 2
+    assert games[0].official_date == "2026-10-15"
+    assert games[0].game_pk == 851400
+    assert games[1].official_date == "2026-10-16"
+    assert games[1].game_pk == 851401
+
+
 def test_parse_current_at_bat_maps_fields() -> None:
     payload = _load_fixture("live_feed_current_play.json")
     snapshot = LidomApiClient.parse_current_at_bat(payload)

@@ -34,6 +34,7 @@ CLI en Python para consultar resultados en vivo de la Liga Dominicana de Béisbo
 ## Características
 
 - Consulta de resultados por fecha.
+- Consulta de resultados por rangos recientes (`yesterday`, `last-week`, `last-month`).
 - Modo de actualización continua para seguimiento en vivo.
 - Turno actual (at-bat) en vivo por `gamePk`.
 - Play-by-play completo por `gamePk`.
@@ -71,6 +72,14 @@ Marcador de una fecha específica:
 
 ```bash
 lidom-live now --date 2026-10-16
+```
+
+Resultados recientes por período:
+
+```bash
+lidom-live history --period yesterday
+lidom-live history --period last-week --status "Final"
+lidom-live history --period last-month --team "Licey"
 ```
 
 Salida JSON:

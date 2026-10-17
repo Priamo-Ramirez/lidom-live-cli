@@ -6,7 +6,7 @@ import argparse
 import json
 import sys
 from dataclasses import asdict
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from time import sleep
 from urllib.error import HTTPError, URLError
 from zoneinfo import ZoneInfo
@@ -97,6 +97,50 @@ def _render_table(
                 lines.append(
                     f"{game.game_pk:<8} {game.away_team:<26} {_score(game.away_score):>2}  "
                     f"{game.home_team:<26} {_score(game.home_score):>2}  "
+                    f"{game.status:<18} {game.start_time_rd}"
+                )
+    return "\n".join(lines)
+
+
+def _render_history_table(
+    games: list[LidomGameScore],
+    start_date_iso: str,
+    end_date_iso: str,
+    compact: bool,
+    show_header: bool,
+    separator: str,
+) -> str:
+    lines: list[str] = []
+    if show_header:
+        stamp = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+        lines.append(
+            f"LIDOM | Rango: {start_date_iso} -> {end_date_iso} | Actualizado: {stamp}"
+        )
+        lines.append("-" * 122)
+        if compact:
+            lines.append("Fecha | gamePk | Partido | Estado | Hora RD")
+        else:
+            lines.append(
+                f"{'Fecha':<10} {'gamePk':<8} {'Visitante':<26} {'R':>2}  "
+                f"{'Home':<26} {'R':>2}  {'Estado':<18} {'Hora RD'}"
+            )
+        lines.append("-" * 122)
+
+    if not games:
+        lines.append("Sin juegos para el rango indicado.")
+    else:
+        ordered_games = sorted(games, key=lambda game: (game.official_date, game.start_time_rd, game.game_pk))
+        for game in ordered_games:
+            if compact:
+                lines.append(
+                    f"{game.official_date}{separator}{game.game_pk}{separator}"
+                    f"{game.away_team} {_score(game.away_score)}-{_score(game.home_score)} {game.home_team}"
+                    f"{separator}{game.status}{separator}{game.start_time_rd}"
+                )
+            else:
+                lines.append(
+                    f"{game.official_date:<10} {game.game_pk:<8} {game.away_team:<26} "
+                    f"{_score(game.away_score):>2}  {game.home_team:<26} {_score(game.home_score):>2}  "
                     f"{game.status:<18} {game.start_time_rd}"
                 )
     return "\n".join(lines)
@@ -284,6 +328,22 @@ def _fetch_filtered_games(
     return _filter_games(games, statuses, team_filter)
 
 
+def _fetch_filtered_games_range(
+    client: LidomApiClient,
+    start_date_iso: str,
+    end_date_iso: str,
+    status_filter: str | None,
+    team_filter: str | None,
+) -> list[LidomGameScore]:
+    payload = client.get_schedule_range(start_date_iso, end_date_iso)
+    if not isinstance(payload, dict):
+        raise TypeError("Respuesta inválida desde MLB Stats API.")
+
+    games = client.parse_scores(payload)
+    statuses = _parse_csv_values(status_filter)
+    return _filter_games(games, statuses, team_filter)
+
+
 def _print_now(
     client: LidomApiClient,
     date_iso: str,
@@ -299,6 +359,41 @@ def _print_now(
         print(json.dumps([asdict(game) for game in games], ensure_ascii=False, indent=2))
         return
     print(_render_table(games, date_iso, compact, show_header, separator))
+
+
+def _print_history(
+    client: LidomApiClient,
+    period: str,
+    as_json: bool,
+    status_filter: str | None,
+    team_filter: str | None,
+    compact: bool,
+    show_header: bool,
+    separator: str,
+) -> None:
+    start_date, end_date = _resolve_period_dates(period)
+    start_date_iso = start_date.isoformat()
+    end_date_iso = end_date.isoformat()
+    games = _fetch_filtered_games_range(
+        client=client,
+        start_date_iso=start_date_iso,
+        end_date_iso=end_date_iso,
+        status_filter=status_filter,
+        team_filter=team_filter,
+    )
+    if as_json:
+        print(json.dumps([asdict(game) for game in games], ensure_ascii=False, indent=2))
+        return
+    print(
+        _render_history_table(
+            games=games,
+            start_date_iso=start_date_iso,
+            end_date_iso=end_date_iso,
+            compact=compact,
+            show_header=show_header,
+            separator=separator,
+        )
+    )
 
 
 def _print_at_bat(
@@ -418,6 +513,26 @@ def main() -> int:
     now_parser.add_argument("--compact", action="store_true", help="Usa vista compacta")
     now_parser.add_argument("--no-header", action="store_true", help="Oculta cabecera de la tabla")
     now_parser.add_argument("--separator", default=" | ", help="Separador en modo compacto")
+
+    history_parser = subparsers.add_parser(
+        "history",
+        help="Muestra resultados para períodos recientes (ayer, última semana, último mes)",
+    )
+    history_parser.add_argument(
+        "--period",
+        choices=["yesterday", "last-week", "last-month"],
+        default="yesterday",
+        help="Período a consultar (default yesterday)",
+    )
+    history_parser.add_argument("--json", action="store_true", help="Salida en formato JSON")
+    history_parser.add_argument(
+        "--status",
+        help='Filtra por estado (CSV), por ejemplo: "Final,In Progress"',
+    )
+    history_parser.add_argument("--team", help="Filtra por equipo (coincidencia parcial)")
+    history_parser.add_argument("--compact", action="store_true", help="Usa vista compacta")
+    history_parser.add_argument("--no-header", action="store_true", help="Oculta cabecera de la tabla")
+    history_parser.add_argument("--separator", default=" | ", help="Separador en modo compacto")
 
     watch_parser = subparsers.add_parser("watch", help="Actualiza resultados continuamente")
     watch_parser.add_argument(
@@ -557,6 +672,19 @@ def main() -> int:
                 )
             return EXIT_OK
 
+        if args.command == "history":
+            _print_history(
+                client=client,
+                period=args.period,
+                as_json=args.json,
+                status_filter=args.status,
+                team_filter=args.team,
+                compact=args.compact,
+                show_header=not args.no_header,
+                separator=args.separator,
+            )
+            return EXIT_OK
+
         if args.command == "game-stats":
             _print_game_stats(client=client, game_pk=args.game_pk, as_json=args.json)
             return EXIT_OK
@@ -630,3 +758,15 @@ def _style(value: str, color_code: str, use_color: bool) -> str:
     if not use_color:
         return value
     return f"{color_code}{value}{ANSI_RESET}"
+
+
+def _resolve_period_dates(period: str, today: date | None = None) -> tuple[date, date]:
+    current = today or datetime.now(ZoneInfo(DOMINICAN_TZ)).date()
+    if period == "yesterday":
+        target = current - timedelta(days=1)
+        return target, target
+    if period == "last-week":
+        return current - timedelta(days=7), current - timedelta(days=1)
+    if period == "last-month":
+        return current - timedelta(days=30), current - timedelta(days=1)
+    raise ValueError(f"Período no soportado: {period}")
