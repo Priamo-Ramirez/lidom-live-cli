@@ -1,0 +1,136 @@
+{
+  "gamePk": 826278,
+  "gameData": {
+    "status": {
+      "detailedState": "Final"
+    },
+    "datetime": {
+      "officialDate": "2025-12-05"
+    },
+    "venue": {
+      "name": "Estadio Quisqueya Juan Marichal"
+    },
+    "teams": {
+      "away": {
+        "name": "Tigres del Licey"
+      },
+      "home": {
+        "name": "Leones del Escogido"
+      }
+    }
+  },
+  "liveData": {
+    "plays": {
+      "allPlays": [
+        {
+          "about": {
+            "atBatIndex": 0,
+            "inning": 1,
+            "halfInning": "top",
+            "isTopInning": true,
+            "isScoringPlay": false
+          },
+          "count": {
+            "outs": 1
+          },
+          "matchup": {
+            "batter": {
+              "fullName": "Gustavo Nunez"
+            },
+            "pitcher": {
+              "fullName": "Johnny Cueto"
+            }
+          },
+          "result": {
+            "description": "Gustavo Nunez grounds out, second baseman to first baseman.",
+            "awayScore": 0,
+            "homeScore": 0
+          },
+          "playEvents": [
+            {
+              "isPitch": true,
+              "details": {
+                "description": "Called Strike",
+                "type": {
+                  "description": "Sinker"
+                }
+              },
+              "pitchData": {
+                "startSpeed": 95.1
+              }
+            },
+            {
+              "isPitch": true,
+              "details": {
+                "description": "In play, out(s)",
+                "type": {
+                  "description": "Sinker"
+                }
+              },
+              "pitchData": {
+                "startSpeed": 96.8
+              }
+            }
+          ]
+        },
+        {
+          "about": {
+            "atBatIndex": 1,
+            "inning": 1,
+            "halfInning": "bottom",
+            "isTopInning": false,
+            "isScoringPlay": true
+          },
+          "count": {
+            "outs": 2
+          },
+          "matchup": {
+            "batter": {
+              "fullName": "Junior Lake"
+            },
+            "pitcher": {
+              "fullName": "Anderson Severino"
+            }
+          },
+          "result": {
+            "description": "Junior Lake singles on a line drive, one run scores.",
+            "awayScore": 0,
+            "homeScore": 1
+          },
+          "playEvents": [
+            {
+              "isPitch": false,
+              "details": {
+                "description": "Mound Visit"
+              }
+            },
+            {
+              "isPitch": true,
+              "details": {
+                "description": "Ball",
+                "type": {
+                  "description": "Changeup"
+                }
+              },
+              "pitchData": {
+                "startSpeed": 86.4
+              }
+            },
+            {
+              "isPitch": true,
+              "details": {
+                "description": "In play, run(s)",
+                "type": {
+                  "description": "Fastball"
+                }
+              },
+              "pitchData": {
+                "startSpeed": 94.7
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

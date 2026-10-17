@@ -6,6 +6,8 @@ from .client import (
     LeagueHittingLeader,
     LidomApiClient,
     LidomGameScore,
+    PlayByPlayEntry,
+    PlayByPlayReport,
     get_today_in_dominican_republic,
 )
 
@@ -15,5 +17,7 @@ __all__ = [
     "LeagueHittingLeader",
     "LidomApiClient",
     "LidomGameScore",
+    "PlayByPlayEntry",
+    "PlayByPlayReport",
     "get_today_in_dominican_republic",
 ]

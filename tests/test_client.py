@@ -84,3 +84,34 @@ def test_parse_league_hitting_leaders_maps_players() -> None:
     assert leaders[0].at_bats == 95
     assert leaders[0].hits == 35
     assert leaders[0].ops == ".927"
+
+
+def test_parse_play_by_play_maps_entries() -> None:
+    payload = _load_fixture("live_feed_play_by_play.json")
+    report = LidomApiClient.parse_play_by_play(payload)
+
+    assert report.game_pk == 826278
+    assert report.status == "Final"
+    assert report.away_team == "Tigres del Licey"
+    assert report.home_team == "Leones del Escogido"
+    assert len(report.plays) == 2
+
+    first_play = report.plays[0]
+    assert first_play.at_bat_index == 0
+    assert first_play.inning == 1
+    assert first_play.half_inning == "top"
+    assert first_play.batting_team == "Tigres del Licey"
+    assert first_play.batter == "Gustavo Nunez"
+    assert first_play.pitcher == "Johnny Cueto"
+    assert first_play.away_score == 0
+    assert first_play.home_score == 0
+    assert first_play.is_scoring_play is False
+    assert first_play.pitch_count == 2
+    assert first_play.pitch_sequence == ["Called Strike (Sinker, 95.1 mph)", "In play, out(s) (Sinker, 96.8 mph)"]
+
+    second_play = report.plays[1]
+    assert second_play.batting_team == "Leones del Escogido"
+    assert second_play.is_scoring_play is True
+    assert second_play.away_score == 0
+    assert second_play.home_score == 1
+    assert second_play.pitch_count == 2

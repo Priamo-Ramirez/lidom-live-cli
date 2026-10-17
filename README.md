@@ -36,6 +36,7 @@ CLI en Python para consultar resultados en vivo de la Liga Dominicana de Béisbo
 - Consulta de resultados por fecha.
 - Modo de actualización continua para seguimiento en vivo.
 - Turno actual (at-bat) en vivo por `gamePk`.
+- Play-by-play completo por `gamePk`.
 - Stats clave del juego (R/H/E y AVG por equipo) en vivo por `gamePk`.
 - Líderes de bateo (AVG) por temporada de LIDOM.
 - Filtros por estado de juego y por equipo.
@@ -138,6 +139,25 @@ Modo watch en vista compacta (5 iteraciones):
 lidom-live atbat --game-pk 851509 --watch --compact --iterations 5 --no-clear
 ```
 
+Play-by-play completo del juego:
+
+```bash
+lidom-live playbyplay --game-pk 826278
+```
+
+Play-by-play compacto con picheos:
+
+```bash
+lidom-live playbyplay --game-pk 826278 --compact --with-pitches
+```
+
+Filtrar play-by-play por inning o equipo:
+
+```bash
+lidom-live playbyplay --game-pk 826278 --inning 7
+lidom-live playbyplay --game-pk 826278 --team "Licey"
+```
+
 Stats del juego en vivo (line score + AVG):
 
 ```bash
@@ -195,6 +215,21 @@ Ejemplo de salida compacta para `atbat --compact`:
 
 ```text
 Tigres del Licey 5-3 Leones del Escogido | Baja 9 | Outs: 3 | Junior Lake (R) vs Anderson Severino (L) | Conteo 0-2 | Último: In play, out(s) (Sinker, 97.8 mph)
+```
+
+Ejemplo de salida para `playbyplay`:
+
+```text
+Play-by-play | Juego 826278 | Tigres del Licey vs Leones del Escogido | Estado: Final
+Fecha: 2025-12-05 | Estadio: Estadio Quisqueya Juan Marichal
+------------------------------------------------------------------------------------------------------------
+  0) Alta 1 | Tigres del Licey | Gustavo Nunez vs Johnny Cueto
+     Resultado: Gustavo Nunez grounds out, second baseman to first baseman. | Outs: 1 | Score: Tigres del Licey 0-0 Leones del Escogido
+     Picheos en turno: 2
+
+  1) Baja 1 | Leones del Escogido | Junior Lake vs Anderson Severino
+     Resultado: Junior Lake singles on a line drive, one run scores. [SCORING] | Outs: 2 | Score: Tigres del Licey 0-1 Leones del Escogido
+     Picheos en turno: 2
 ```
 
 ## Desarrollo

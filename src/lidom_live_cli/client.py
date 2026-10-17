@@ -85,6 +85,38 @@ class GameStatsSummary:
 
 
 @dataclass(frozen=True)
+class PlayByPlayEntry:
+    """Un turno (at-bat) dentro del play-by-play de un juego."""
+
+    at_bat_index: int
+    inning: int | None
+    half_inning: str
+    batting_team: str
+    batter: str
+    pitcher: str
+    result: str
+    outs: int
+    away_score: int | None
+    home_score: int | None
+    is_scoring_play: bool
+    pitch_count: int
+    pitch_sequence: list[str]
+
+
+@dataclass(frozen=True)
+class PlayByPlayReport:
+    """Play-by-play completo de un juego con metadatos base."""
+
+    game_pk: int
+    status: str
+    official_date: str
+    venue: str
+    away_team: str
+    home_team: str
+    plays: list[PlayByPlayEntry]
+
+
+@dataclass(frozen=True)
 class LeagueHittingLeader:
     """Líder de bateo en la temporada de LIDOM."""
 
@@ -173,6 +205,10 @@ class LidomApiClient:
     def get_game_stats_summary(self, game_pk: int) -> GameStatsSummary:
         payload = self.get_live_feed(game_pk)
         return self.parse_game_stats_summary(payload)
+
+    def get_play_by_play(self, game_pk: int) -> PlayByPlayReport:
+        payload = self.get_live_feed(game_pk)
+        return self.parse_play_by_play(payload)
 
     def get_league_hitting_leaders(self, season: int, limit: int = 10) -> list[LeagueHittingLeader]:
         payload = self._get_json(
@@ -296,6 +332,47 @@ class LidomApiClient:
             home_errors=(line_teams.get("home") or {}).get("errors"),
             away_avg=away_batting.get("avg"),
             home_avg=home_batting.get("avg"),
+        )
+
+    @staticmethod
+    def parse_play_by_play(live_feed_payload: dict[str, Any]) -> PlayByPlayReport:
+        game_data = live_feed_payload.get("gameData") or {}
+        live_data = live_feed_payload.get("liveData") or {}
+        teams = game_data.get("teams") or {}
+        all_plays = ((live_data.get("plays") or {}).get("allPlays") or [])
+
+        plays: list[PlayByPlayEntry] = []
+        for fallback_index, play in enumerate(all_plays):
+            about = play.get("about") or {}
+            matchup = play.get("matchup") or {}
+            result = play.get("result") or {}
+            pitch_events = [event for event in (play.get("playEvents") or []) if event.get("isPitch")]
+            plays.append(
+                PlayByPlayEntry(
+                    at_bat_index=about.get("atBatIndex", fallback_index),
+                    inning=about.get("inning"),
+                    half_inning=about.get("halfInning", ""),
+                    batting_team=_batting_team_name({}, teams, about),
+                    batter=(matchup.get("batter") or {}).get("fullName", ""),
+                    pitcher=(matchup.get("pitcher") or {}).get("fullName", ""),
+                    result=result.get("description", ""),
+                    outs=(play.get("count") or {}).get("outs", 0),
+                    away_score=result.get("awayScore"),
+                    home_score=result.get("homeScore"),
+                    is_scoring_play=bool(about.get("isScoringPlay")),
+                    pitch_count=len(pitch_events),
+                    pitch_sequence=_event_sequence(pitch_events),
+                )
+            )
+
+        return PlayByPlayReport(
+            game_pk=live_feed_payload.get("gamePk", 0),
+            status=(game_data.get("status") or {}).get("detailedState", ""),
+            official_date=(game_data.get("datetime") or {}).get("officialDate", ""),
+            venue=(game_data.get("venue") or {}).get("name", ""),
+            away_team=(teams.get("away") or {}).get("name", ""),
+            home_team=(teams.get("home") or {}).get("name", ""),
+            plays=plays,
         )
 
     @staticmethod

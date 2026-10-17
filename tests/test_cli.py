@@ -2,10 +2,12 @@ from __future__ import annotations
 
 from lidom_live_cli.cli import (
     _filter_games,
+    _filter_play_by_play,
     _parse_csv_values,
     _render_at_bat,
     _render_game_stats,
     _render_league_leaders,
+    _render_play_by_play,
     _render_table,
     _watch_at_bat,
 )
@@ -14,6 +16,8 @@ from lidom_live_cli.client import (
     GameStatsSummary,
     LeagueHittingLeader,
     LidomGameScore,
+    PlayByPlayEntry,
+    PlayByPlayReport,
 )
 
 
@@ -272,3 +276,98 @@ def test_watch_at_bat_rejects_negative_iterations() -> None:
         assert "--iterations" in str(error)
     else:
         raise AssertionError("Se esperaba ValueError para iterations=-1")
+
+
+def test_render_play_by_play_contains_core_fields() -> None:
+    report = PlayByPlayReport(
+        game_pk=826278,
+        status="Final",
+        official_date="2025-12-05",
+        venue="Estadio Quisqueya Juan Marichal",
+        away_team="Tigres del Licey",
+        home_team="Leones del Escogido",
+        plays=[
+            PlayByPlayEntry(
+                at_bat_index=0,
+                inning=1,
+                half_inning="top",
+                batting_team="Tigres del Licey",
+                batter="Gustavo Nunez",
+                pitcher="Johnny Cueto",
+                result="Gustavo Nunez grounds out.",
+                outs=1,
+                away_score=0,
+                home_score=0,
+                is_scoring_play=False,
+                pitch_count=2,
+                pitch_sequence=["Called Strike (Sinker, 95.1 mph)", "In play, out(s) (Sinker, 96.8 mph)"],
+            ),
+            PlayByPlayEntry(
+                at_bat_index=1,
+                inning=1,
+                half_inning="bottom",
+                batting_team="Leones del Escogido",
+                batter="Junior Lake",
+                pitcher="Anderson Severino",
+                result="Junior Lake singles, one run scores.",
+                outs=2,
+                away_score=0,
+                home_score=1,
+                is_scoring_play=True,
+                pitch_count=2,
+                pitch_sequence=["Ball (Changeup, 86.4 mph)", "In play, run(s) (Fastball, 94.7 mph)"],
+            ),
+        ],
+    )
+
+    output = _render_play_by_play(report, plays=report.plays, compact=False, with_pitches=True)
+    assert "Play-by-play | Juego 826278" in output
+    assert "Gustavo Nunez vs Johnny Cueto" in output
+    assert "Junior Lake singles, one run scores. [SCORING]" in output
+    assert "1. Ball (Changeup, 86.4 mph)" in output
+
+    compact_output = _render_play_by_play(report, plays=report.plays, compact=True, with_pitches=True)
+    assert "Picheos: Called Strike (Sinker, 95.1 mph); In play, out(s) (Sinker, 96.8 mph)" in compact_output
+
+
+def test_filter_play_by_play_supports_inning_and_team() -> None:
+    plays = [
+        PlayByPlayEntry(
+            at_bat_index=0,
+            inning=1,
+            half_inning="top",
+            batting_team="Tigres del Licey",
+            batter="Gustavo Nunez",
+            pitcher="Johnny Cueto",
+            result="Out",
+            outs=1,
+            away_score=0,
+            home_score=0,
+            is_scoring_play=False,
+            pitch_count=1,
+            pitch_sequence=[],
+        ),
+        PlayByPlayEntry(
+            at_bat_index=1,
+            inning=2,
+            half_inning="bottom",
+            batting_team="Leones del Escogido",
+            batter="Junior Lake",
+            pitcher="Anderson Severino",
+            result="Single",
+            outs=0,
+            away_score=0,
+            home_score=1,
+            is_scoring_play=True,
+            pitch_count=2,
+            pitch_sequence=[],
+        ),
+    ]
+
+    by_inning = _filter_play_by_play(plays, inning=2, team_query=None)
+    assert len(by_inning) == 1
+    assert by_inning[0].at_bat_index == 1
+
+    by_team = _filter_play_by_play(plays, inning=None, team_query="licey")
+    assert len(by_team) == 1
+    assert by_team[0].at_bat_index == 0

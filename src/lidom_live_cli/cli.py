@@ -18,6 +18,8 @@ from .client import (
     LeagueHittingLeader,
     LidomApiClient,
     LidomGameScore,
+    PlayByPlayEntry,
+    PlayByPlayReport,
     get_today_in_dominican_republic,
 )
 
@@ -206,6 +208,70 @@ def _render_league_leaders(leaders: list[LeagueHittingLeader], season: int) -> s
     return "\n".join(lines)
 
 
+def _render_play_by_play(
+    report: PlayByPlayReport, plays: list[PlayByPlayEntry], compact: bool, with_pitches: bool
+) -> str:
+    title = (
+        f"Play-by-play | Juego {report.game_pk} | {report.away_team} vs {report.home_team} | "
+        f"Estado: {report.status}"
+    )
+    meta = f"Fecha: {report.official_date or '-'} | Estadio: {report.venue or '-'}"
+
+    lines = [title, meta, "-" * 108]
+    if not plays:
+        lines.append("No hay jugadas para los filtros seleccionados.")
+        return "\n".join(lines)
+
+    for play in plays:
+        inning = _inning_label(play.half_inning, play.inning)
+        score = f"{_score(play.away_score)}-{_score(play.home_score)}"
+        scoring_tag = " [SCORING]" if play.is_scoring_play else ""
+        if compact:
+            compact_line = (
+                f"{play.at_bat_index:>3} | {inning:<7} | {play.batter} vs {play.pitcher} | "
+                f"{play.result}{scoring_tag} | Score {score}"
+            )
+            if with_pitches and play.pitch_sequence:
+                compact_line += f" | Picheos: {'; '.join(play.pitch_sequence)}"
+            lines.append(compact_line)
+            continue
+
+        lines.append(
+            f"{play.at_bat_index:>3}) {inning} | {play.batting_team or '-'} | "
+            f"{play.batter} vs {play.pitcher}"
+        )
+        lines.append(
+            f"     Resultado: {play.result}{scoring_tag} | Outs: {play.outs} | "
+            f"Score: {report.away_team} {score} {report.home_team}"
+        )
+        lines.append(f"     Picheos en turno: {play.pitch_count}")
+        if with_pitches and play.pitch_sequence:
+            for event_idx, pitch in enumerate(play.pitch_sequence, start=1):
+                lines.append(f"       {event_idx}. {pitch}")
+        lines.append("")
+
+    if lines[-1] == "":
+        lines.pop()
+    return "\n".join(lines)
+
+
+def _filter_play_by_play(
+    plays: list[PlayByPlayEntry], inning: int | None, team_query: str | None
+) -> list[PlayByPlayEntry]:
+    filtered = plays
+    if inning is not None:
+        filtered = [play for play in filtered if play.inning == inning]
+
+    if team_query:
+        query = team_query.lower()
+        filtered = [
+            play
+            for play in filtered
+            if query in play.batting_team.lower() or query in play.batter.lower()
+        ]
+    return filtered
+
+
 def _fetch_filtered_games(
     client: LidomApiClient, date_iso: str, status_filter: str | None, team_filter: str | None
 ) -> list[LidomGameScore]:
@@ -291,6 +357,25 @@ def _print_league_leaders(client: LidomApiClient, season: int, limit: int, as_js
         print(json.dumps([asdict(leader) for leader in leaders], ensure_ascii=False, indent=2))
         return
     print(_render_league_leaders(leaders, season))
+
+
+def _print_play_by_play(
+    client: LidomApiClient,
+    game_pk: int,
+    as_json: bool,
+    compact: bool,
+    with_pitches: bool,
+    inning_filter: int | None,
+    team_filter: str | None,
+) -> None:
+    report = client.get_play_by_play(game_pk)
+    plays = _filter_play_by_play(report.plays, inning=inning_filter, team_query=team_filter)
+    if as_json:
+        payload = asdict(report)
+        payload["plays"] = [asdict(play) for play in plays]
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return
+    print(_render_play_by_play(report, plays=plays, compact=compact, with_pitches=with_pitches))
 
 
 def _print_watch(
@@ -415,6 +500,24 @@ def main() -> int:
     leaders_parser.add_argument("--limit", type=int, default=10, help="Cantidad máxima de jugadores (default 10)")
     leaders_parser.add_argument("--json", action="store_true", help="Salida en formato JSON")
 
+    play_by_play_parser = subparsers.add_parser(
+        "playbyplay", help="Muestra el play-by-play completo de un juego por gamePk"
+    )
+    play_by_play_parser.add_argument(
+        "--game-pk", type=int, required=True, help="Identificador gamePk del juego"
+    )
+    play_by_play_parser.add_argument("--json", action="store_true", help="Salida en formato JSON")
+    play_by_play_parser.add_argument("--compact", action="store_true", help="Vista compacta por jugada")
+    play_by_play_parser.add_argument(
+        "--with-pitches",
+        action="store_true",
+        help="Incluye secuencia de picheos por turno en la salida de texto",
+    )
+    play_by_play_parser.add_argument("--inning", type=int, help="Filtra jugadas por inning")
+    play_by_play_parser.add_argument(
+        "--team", help="Filtra jugadas por equipo al bate o nombre de bateador"
+    )
+
     args = parser.parse_args()
     client = LidomApiClient()
 
@@ -460,6 +563,18 @@ def main() -> int:
 
         if args.command == "leaders":
             _print_league_leaders(client=client, season=args.season, limit=args.limit, as_json=args.json)
+            return EXIT_OK
+
+        if args.command == "playbyplay":
+            _print_play_by_play(
+                client=client,
+                game_pk=args.game_pk,
+                as_json=args.json,
+                compact=args.compact,
+                with_pitches=args.with_pitches,
+                inning_filter=args.inning,
+                team_filter=args.team,
+            )
             return EXIT_OK
 
         _print_watch(
