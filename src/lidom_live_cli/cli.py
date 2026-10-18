@@ -33,6 +33,12 @@ ANSI_CYAN = "\033[36m"
 ANSI_GREEN = "\033[32m"
 ANSI_YELLOW = "\033[33m"
 ANSI_RED = "\033[31m"
+ANSI_BLUE_BRIGHT = "\033[94m"
+ANSI_RED_BRIGHT = "\033[91m"
+ANSI_YELLOW_BRIGHT = "\033[93m"
+ANSI_GREEN_BRIGHT = "\033[92m"
+ANSI_MAGENTA_BRIGHT = "\033[95m"
+ANSI_ORANGE_APPROX = "\033[33m"
 
 DEFAULT_SCHEDULE_STATUSES = (
     "Scheduled",
@@ -40,6 +46,14 @@ DEFAULT_SCHEDULE_STATUSES = (
     "Warmup",
     "Delayed Start",
 )
+TEAM_COLOR_TOKENS: dict[str, str] = {
+    "tigres del licey": ANSI_BLUE_BRIGHT,
+    "leones del escogido": ANSI_RED_BRIGHT,
+    "aguilas cibaenas": ANSI_YELLOW_BRIGHT,
+    "gigantes del cibao": ANSI_MAGENTA_BRIGHT,
+    "estrellas orientales": ANSI_GREEN_BRIGHT,
+    "toros del este": ANSI_ORANGE_APPROX,
+}
 
 
 def _score(value: int | None) -> str:
@@ -77,6 +91,7 @@ def _render_table(
     compact: bool,
     show_header: bool,
     separator: str,
+    use_color: bool,
 ) -> str:
     lines: list[str] = []
     if show_header:
@@ -95,15 +110,19 @@ def _render_table(
         lines.append("Sin juegos para la fecha indicada.")
     else:
         for game in games:
+            away_team = _team_label(game.away_team, use_color)
+            home_team = _team_label(game.home_team, use_color)
             if compact:
                 lines.append(
-                    f"{game.game_pk}{separator}{game.away_team} {_score(game.away_score)}-{_score(game.home_score)} "
-                    f"{game.home_team}{separator}{game.status}{separator}{game.start_time_rd}"
+                    f"{game.game_pk}{separator}{away_team} {_score(game.away_score)}-{_score(game.home_score)} "
+                    f"{home_team}{separator}{game.status}{separator}{game.start_time_rd}"
                 )
             else:
+                away_team_fixed = _team_label(game.away_team, use_color, width=26)
+                home_team_fixed = _team_label(game.home_team, use_color, width=26)
                 lines.append(
-                    f"{game.game_pk:<8} {game.away_team:<26} {_score(game.away_score):>2}  "
-                    f"{game.home_team:<26} {_score(game.home_score):>2}  "
+                    f"{game.game_pk:<8} {away_team_fixed} {_score(game.away_score):>2}  "
+                    f"{home_team_fixed} {_score(game.home_score):>2}  "
                     f"{game.status:<18} {game.start_time_rd}"
                 )
     return "\n".join(lines)
@@ -116,6 +135,7 @@ def _render_history_table(
     compact: bool,
     show_header: bool,
     separator: str,
+    use_color: bool,
 ) -> str:
     lines: list[str] = []
     if show_header:
@@ -138,16 +158,20 @@ def _render_history_table(
     else:
         ordered_games = sorted(games, key=lambda game: (game.official_date, game.start_time_rd, game.game_pk))
         for game in ordered_games:
+            away_team = _team_label(game.away_team, use_color)
+            home_team = _team_label(game.home_team, use_color)
             if compact:
                 lines.append(
                     f"{game.official_date}{separator}{game.game_pk}{separator}"
-                    f"{game.away_team} {_score(game.away_score)}-{_score(game.home_score)} {game.home_team}"
+                    f"{away_team} {_score(game.away_score)}-{_score(game.home_score)} {home_team}"
                     f"{separator}{game.status}{separator}{game.start_time_rd}"
                 )
             else:
+                away_team_fixed = _team_label(game.away_team, use_color, width=26)
+                home_team_fixed = _team_label(game.home_team, use_color, width=26)
                 lines.append(
-                    f"{game.official_date:<10} {game.game_pk:<8} {game.away_team:<26} "
-                    f"{_score(game.away_score):>2}  {game.home_team:<26} {_score(game.home_score):>2}  "
+                    f"{game.official_date:<10} {game.game_pk:<8} {away_team_fixed} "
+                    f"{_score(game.away_score):>2}  {home_team_fixed} {_score(game.home_score):>2}  "
                     f"{game.status:<18} {game.start_time_rd}"
                 )
     return "\n".join(lines)
@@ -160,6 +184,7 @@ def _render_schedule_table(
     compact: bool,
     show_header: bool,
     separator: str,
+    use_color: bool,
 ) -> str:
     lines: list[str] = []
     if show_header:
@@ -182,11 +207,13 @@ def _render_schedule_table(
     else:
         ordered_games = sorted(games, key=lambda game: (game.official_date, game.start_time_rd, game.game_pk))
         for game in ordered_games:
+            away_team = _team_label(game.away_team, use_color)
+            home_team = _team_label(game.home_team, use_color)
             if compact:
                 matchup = (
-                    f"{game.away_team} vs {game.home_team}"
+                    f"{away_team} vs {home_team}"
                     if game.away_score is None and game.home_score is None
-                    else f"{game.away_team} {_score(game.away_score)}-{_score(game.home_score)} {game.home_team}"
+                    else f"{away_team} {_score(game.away_score)}-{_score(game.home_score)} {home_team}"
                 )
                 lines.append(
                     f"{game.official_date}{separator}{game.game_pk}{separator}"
@@ -194,9 +221,11 @@ def _render_schedule_table(
                     f"{separator}{game.status}{separator}{game.start_time_rd}"
                 )
             else:
+                away_team_fixed = _team_label(game.away_team, use_color, width=26)
+                home_team_fixed = _team_label(game.home_team, use_color, width=26)
                 lines.append(
-                    f"{game.official_date:<10} {game.game_pk:<8} {game.away_team:<26} "
-                    f"{_score(game.away_score):>2}  {game.home_team:<26} {_score(game.home_score):>2}  "
+                    f"{game.official_date:<10} {game.game_pk:<8} {away_team_fixed} "
+                    f"{_score(game.away_score):>2}  {home_team_fixed} {_score(game.home_score):>2}  "
                     f"{game.status:<18} {game.start_time_rd}"
                 )
     return "\n".join(lines)
@@ -212,8 +241,8 @@ def _render_at_bat(snapshot: AtBatSnapshot, compact: bool, use_color: bool) -> s
 
     if compact:
         return (
-            f"{snapshot.away_team} {_score(snapshot.away_runs)}-{_score(snapshot.home_runs)} "
-            f"{snapshot.home_team} | {inning_label} | Outs: {snapshot.outs} | "
+            f"{_team_label(snapshot.away_team, use_color)} {_score(snapshot.away_runs)}-{_score(snapshot.home_runs)} "
+            f"{_team_label(snapshot.home_team, use_color)} | {inning_label} | Outs: {snapshot.outs} | "
             f"{snapshot.batter}{batter_suffix} vs {snapshot.pitcher}{pitcher_suffix} | "
             f"Conteo {_format_count(snapshot.balls, snapshot.strikes, use_color=False)} | "
             f"Último: {snapshot.last_event} ({last_pitch})"
@@ -223,20 +252,20 @@ def _render_at_bat(snapshot: AtBatSnapshot, compact: bool, use_color: bool) -> s
     lines = [
         _style(separator, ANSI_CYAN, use_color),
         _style("LIDOM EN VIVO", ANSI_BOLD, use_color),
-        f"Juego: {snapshot.away_team} vs {snapshot.home_team}",
+        f"Juego: {_team_label(snapshot.away_team, use_color)} vs {_team_label(snapshot.home_team, use_color)}",
         (
             f"Estado: {snapshot.status} | Fecha: {snapshot.official_date or '-'} | "
             f"Estadio: {snapshot.venue or '-'}"
         ),
         (
-            f"Marcador: {snapshot.away_team} {_score(snapshot.away_runs)} - "
-            f"{_score(snapshot.home_runs)} {snapshot.home_team}"
+            f"Marcador: {_team_label(snapshot.away_team, use_color)} {_score(snapshot.away_runs)} - "
+            f"{_score(snapshot.home_runs)} {_team_label(snapshot.home_team, use_color)}"
         ),
         f"Inning: {inning_label} | Outs: {snapshot.outs} | Corredores: {snapshot.runners}",
         _style(separator, ANSI_CYAN, use_color),
         "",
         _style("TURNO ACTUAL", ANSI_BOLD, use_color),
-        f"- Equipo al bate: {snapshot.batting_team or '-'}",
+        f"- Equipo al bate: {_team_label(snapshot.batting_team, use_color) if snapshot.batting_team else '-'}",
         f"- Bateador: {snapshot.batter}{batter_suffix}",
         f"- Pitcher: {snapshot.pitcher}{pitcher_suffix}",
         f"- Conteo: {_format_count(snapshot.balls, snapshot.strikes, use_color)}",
@@ -264,9 +293,9 @@ def _render_at_bat(snapshot: AtBatSnapshot, compact: bool, use_color: bool) -> s
     return "\n".join(lines)
 
 
-def _render_game_stats(summary: GameStatsSummary) -> str:
+def _render_game_stats(summary: GameStatsSummary, use_color: bool) -> str:
     lines = [
-        f"Juego {summary.game_pk} | {summary.away_team} vs {summary.home_team}",
+        f"Juego {summary.game_pk} | {_team_label(summary.away_team, use_color)} vs {_team_label(summary.home_team, use_color)}",
         f"Estado: {summary.status}",
     ]
     if summary.current_inning:
@@ -277,12 +306,12 @@ def _render_game_stats(summary: GameStatsSummary) -> str:
             f"{'Equipo':<26} {'R':>2} {'H':>2} {'E':>2} {'AVG':>6}",
             "-" * 44,
             (
-                f"{summary.away_team:<26} {_score(summary.away_runs):>2} "
+                f"{_team_label(summary.away_team, use_color, width=26)} {_score(summary.away_runs):>2} "
                 f"{_score(summary.away_hits):>2} {_score(summary.away_errors):>2} "
                 f"{summary.away_avg or '-':>6}"
             ),
             (
-                f"{summary.home_team:<26} {_score(summary.home_runs):>2} "
+                f"{_team_label(summary.home_team, use_color, width=26)} {_score(summary.home_runs):>2} "
                 f"{_score(summary.home_hits):>2} {_score(summary.home_errors):>2} "
                 f"{summary.home_avg or '-':>6}"
             ),
@@ -309,10 +338,10 @@ def _render_league_leaders(leaders: list[LeagueHittingLeader], season: int) -> s
 
 
 def _render_play_by_play(
-    report: PlayByPlayReport, plays: list[PlayByPlayEntry], compact: bool, with_pitches: bool
+    report: PlayByPlayReport, plays: list[PlayByPlayEntry], compact: bool, with_pitches: bool, use_color: bool
 ) -> str:
     title = (
-        f"Play-by-play | Juego {report.game_pk} | {report.away_team} vs {report.home_team} | "
+        f"Play-by-play | Juego {report.game_pk} | {_team_label(report.away_team, use_color)} vs {_team_label(report.home_team, use_color)} | "
         f"Estado: {report.status}"
     )
     meta = f"Fecha: {report.official_date or '-'} | Estadio: {report.venue or '-'}"
@@ -337,12 +366,12 @@ def _render_play_by_play(
             continue
 
         lines.append(
-            f"{play.at_bat_index:>3}) {inning} | {play.batting_team or '-'} | "
+            f"{play.at_bat_index:>3}) {inning} | {_team_label(play.batting_team, use_color) if play.batting_team else '-'} | "
             f"{play.batter} vs {play.pitcher}"
         )
         lines.append(
             f"     Resultado: {play.result}{scoring_tag} | Outs: {play.outs} | "
-            f"Score: {report.away_team} {score} {report.home_team}"
+            f"Score: {_team_label(report.away_team, use_color)} {score} {_team_label(report.home_team, use_color)}"
         )
         lines.append(f"     Picheos en turno: {play.pitch_count}")
         if with_pitches and play.pitch_sequence:
@@ -409,12 +438,13 @@ def _print_now(
     compact: bool,
     show_header: bool,
     separator: str,
+    use_color: bool,
 ) -> None:
     games = _fetch_filtered_games(client, date_iso, status_filter, team_filter)
     if as_json:
         print(json.dumps([asdict(game) for game in games], ensure_ascii=False, indent=2))
         return
-    print(_render_table(games, date_iso, compact, show_header, separator))
+    print(_render_table(games, date_iso, compact, show_header, separator, use_color))
 
 
 def _print_history(
@@ -426,6 +456,7 @@ def _print_history(
     compact: bool,
     show_header: bool,
     separator: str,
+    use_color: bool,
 ) -> None:
     start_date, end_date = _resolve_period_dates(period)
     start_date_iso = start_date.isoformat()
@@ -448,6 +479,7 @@ def _print_history(
             compact=compact,
             show_header=show_header,
             separator=separator,
+            use_color=use_color,
         )
     )
 
@@ -462,6 +494,7 @@ def _print_schedule(
     compact: bool,
     show_header: bool,
     separator: str,
+    use_color: bool,
 ) -> None:
     anchor_date = _parse_iso_date(anchor_date_iso)
     start_date, end_date = _resolve_schedule_dates(period=period, anchor_date=anchor_date)
@@ -486,6 +519,7 @@ def _print_schedule(
             compact=compact,
             show_header=show_header,
             separator=separator,
+            use_color=use_color,
         )
     )
 
@@ -530,12 +564,12 @@ def _watch_at_bat(
         sleep(interval_seconds)
 
 
-def _print_game_stats(client: LidomApiClient, game_pk: int, as_json: bool) -> None:
+def _print_game_stats(client: LidomApiClient, game_pk: int, as_json: bool, use_color: bool) -> None:
     summary = client.get_game_stats_summary(game_pk)
     if as_json:
         print(json.dumps(asdict(summary), ensure_ascii=False, indent=2))
         return
-    print(_render_game_stats(summary))
+    print(_render_game_stats(summary, use_color=use_color))
 
 
 def _print_league_leaders(client: LidomApiClient, season: int, limit: int, as_json: bool) -> None:
@@ -556,6 +590,7 @@ def _print_play_by_play(
     with_pitches: bool,
     inning_filter: int | None,
     team_filter: str | None,
+    use_color: bool,
 ) -> None:
     report = client.get_play_by_play(game_pk)
     plays = _filter_play_by_play(report.plays, inning=inning_filter, team_query=team_filter)
@@ -564,7 +599,15 @@ def _print_play_by_play(
         payload["plays"] = [asdict(play) for play in plays]
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return
-    print(_render_play_by_play(report, plays=plays, compact=compact, with_pitches=with_pitches))
+    print(
+        _render_play_by_play(
+            report,
+            plays=plays,
+            compact=compact,
+            with_pitches=with_pitches,
+            use_color=use_color,
+        )
+    )
 
 
 def _print_watch(
@@ -578,6 +621,7 @@ def _print_watch(
     compact: bool,
     show_header: bool,
     separator: str,
+    use_color: bool,
 ) -> None:
     loop_count = 0
     while iterations == 0 or loop_count < iterations:
@@ -585,7 +629,7 @@ def _print_watch(
         # Limpia pantalla para mostrar solo la versión más reciente del marcador.
         if clear_screen:
             print("\033c", end="")
-        print(_render_table(games, date_iso, compact, show_header, separator))
+        print(_render_table(games, date_iso, compact, show_header, separator, use_color))
         loop_count += 1
         if iterations != 0 and loop_count >= iterations:
             break
@@ -607,6 +651,12 @@ def main() -> int:
     now_parser.add_argument("--compact", action="store_true", help="Usa vista compacta")
     now_parser.add_argument("--no-header", action="store_true", help="Oculta cabecera de la tabla")
     now_parser.add_argument("--separator", default=" | ", help="Separador en modo compacto")
+    now_parser.add_argument(
+        "--color",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Activa colores ANSI para nombres de equipos (default false)",
+    )
 
     history_parser = subparsers.add_parser(
         "history",
@@ -627,6 +677,12 @@ def main() -> int:
     history_parser.add_argument("--compact", action="store_true", help="Usa vista compacta")
     history_parser.add_argument("--no-header", action="store_true", help="Oculta cabecera de la tabla")
     history_parser.add_argument("--separator", default=" | ", help="Separador en modo compacto")
+    history_parser.add_argument(
+        "--color",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Activa colores ANSI para nombres de equipos (default false)",
+    )
 
     schedule_parser = subparsers.add_parser(
         "schedule",
@@ -652,6 +708,12 @@ def main() -> int:
     schedule_parser.add_argument("--compact", action="store_true", help="Usa vista compacta")
     schedule_parser.add_argument("--no-header", action="store_true", help="Oculta cabecera de la tabla")
     schedule_parser.add_argument("--separator", default=" | ", help="Separador en modo compacto")
+    schedule_parser.add_argument(
+        "--color",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Activa colores ANSI para nombres de equipos (default false)",
+    )
 
     watch_parser = subparsers.add_parser("watch", help="Actualiza resultados continuamente")
     watch_parser.add_argument(
@@ -685,6 +747,12 @@ def main() -> int:
     watch_parser.add_argument("--compact", action="store_true", help="Usa vista compacta")
     watch_parser.add_argument("--no-header", action="store_true", help="Oculta cabecera de la tabla")
     watch_parser.add_argument("--separator", default=" | ", help="Separador en modo compacto")
+    watch_parser.add_argument(
+        "--color",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Activa colores ANSI para nombres de equipos (default false)",
+    )
 
     atbat_parser = subparsers.add_parser("atbat", help="Muestra el turno actual (live feed) de un juego")
     atbat_parser.add_argument("--game-pk", type=int, required=True, help="Identificador gamePk del juego")
@@ -721,6 +789,12 @@ def main() -> int:
     )
     game_stats_parser.add_argument("--game-pk", type=int, required=True, help="Identificador gamePk del juego")
     game_stats_parser.add_argument("--json", action="store_true", help="Salida en formato JSON")
+    game_stats_parser.add_argument(
+        "--color",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Activa colores ANSI para nombres de equipos (default false)",
+    )
 
     leaders_parser = subparsers.add_parser(
         "leaders", help="Muestra líderes de bateo (AVG) de la temporada de LIDOM"
@@ -751,6 +825,12 @@ def main() -> int:
     play_by_play_parser.add_argument(
         "--team", help="Filtra jugadas por equipo al bate o nombre de bateador"
     )
+    play_by_play_parser.add_argument(
+        "--color",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Activa colores ANSI para nombres de equipos (default false)",
+    )
 
     args = parser.parse_args()
     client = LidomApiClient()
@@ -766,6 +846,7 @@ def main() -> int:
                 compact=args.compact,
                 show_header=not args.no_header,
                 separator=args.separator,
+                use_color=args.color,
             )
             return EXIT_OK
 
@@ -801,6 +882,7 @@ def main() -> int:
                 compact=args.compact,
                 show_header=not args.no_header,
                 separator=args.separator,
+                use_color=args.color,
             )
             return EXIT_OK
 
@@ -815,11 +897,12 @@ def main() -> int:
                 compact=args.compact,
                 show_header=not args.no_header,
                 separator=args.separator,
+                use_color=args.color,
             )
             return EXIT_OK
 
         if args.command == "game-stats":
-            _print_game_stats(client=client, game_pk=args.game_pk, as_json=args.json)
+            _print_game_stats(client=client, game_pk=args.game_pk, as_json=args.json, use_color=args.color)
             return EXIT_OK
 
         if args.command == "leaders":
@@ -835,6 +918,7 @@ def main() -> int:
                 with_pitches=args.with_pitches,
                 inning_filter=args.inning,
                 team_filter=args.team,
+                use_color=args.color,
             )
             return EXIT_OK
 
@@ -849,6 +933,7 @@ def main() -> int:
             compact=args.compact,
             show_header=not args.no_header,
             separator=args.separator,
+            use_color=args.color,
         )
         return EXIT_OK
     except KeyboardInterrupt:
@@ -891,6 +976,20 @@ def _style(value: str, color_code: str, use_color: bool) -> str:
     if not use_color:
         return value
     return f"{color_code}{value}{ANSI_RESET}"
+
+
+def _team_label(team_name: str, use_color: bool, width: int | None = None) -> str:
+    if not team_name:
+        return team_name
+    label = team_name.ljust(width) if width else team_name
+    if not use_color:
+        return label
+
+    normalized = team_name.lower().replace("á", "a").replace("é", "e").replace("í", "i").replace("ó", "o").replace("ú", "u")
+    for token, color in TEAM_COLOR_TOKENS.items():
+        if token in normalized:
+            return _style(label, color, use_color=True)
+    return label
 
 
 def _resolve_period_dates(period: str, today: date | None = None) -> tuple[date, date]:

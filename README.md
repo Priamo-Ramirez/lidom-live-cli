@@ -43,6 +43,7 @@ CLI en Python para consultar resultados en vivo de la Liga Dominicana de Béisbo
 - Líderes de bateo (AVG) por temporada de LIDOM.
 - Filtros por estado de juego y por equipo.
 - Salida legible en tabla para terminal.
+- Colores ANSI opcionales por equipo (`--color`).
 - Salida JSON para integración con scripts.
 - Reintentos automáticos con backoff para errores transitorios de red.
 
@@ -97,6 +98,12 @@ Schedule desde una fecha ancla:
 lidom-live schedule --period week --date 2026-10-17
 ```
 
+Schedule con colores de equipos:
+
+```bash
+lidom-live schedule --period week --color
+```
+
 Salida JSON:
 
 ```bash
@@ -113,6 +120,12 @@ Vista compacta sin cabecera:
 
 ```bash
 lidom-live now --compact --no-header
+```
+
+Colores de equipos en la salida:
+
+```bash
+lidom-live now --color
 ```
 
 Modo en vivo (actualiza cada 20 segundos):
@@ -175,6 +188,12 @@ Play-by-play compacto con picheos:
 lidom-live playbyplay --game-pk 826278 --compact --with-pitches
 ```
 
+Play-by-play con colores de equipos:
+
+```bash
+lidom-live playbyplay --game-pk 826278 --color
+```
+
 Filtrar play-by-play por inning o equipo:
 
 ```bash
@@ -186,6 +205,12 @@ Stats del juego en vivo (line score + AVG):
 
 ```bash
 lidom-live game-stats --game-pk 851509
+```
+
+Stats del juego con colores de equipos:
+
+```bash
+lidom-live game-stats --game-pk 851509 --color
 ```
 
 Líderes de bateo (AVG) para una temporada:

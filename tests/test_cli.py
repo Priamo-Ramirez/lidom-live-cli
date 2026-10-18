@@ -48,6 +48,7 @@ def test_render_table_contains_key_fields() -> None:
         compact=False,
         show_header=True,
         separator=" | ",
+        use_color=False,
     )
     assert "Aguilas Cibaenas" in output
     assert "Gigantes del Cibao" in output
@@ -75,6 +76,7 @@ def test_render_table_compact_no_header() -> None:
         compact=True,
         show_header=False,
         separator=" / ",
+        use_color=False,
     )
     assert "LIDOM | Fecha:" not in output
     assert "851509 / Aguilas Cibaenas 3-2 Gigantes del Cibao / In Progress / 19:00" in output
@@ -111,6 +113,7 @@ def test_render_history_table_compact_no_header() -> None:
         compact=True,
         show_header=False,
         separator=" / ",
+        use_color=False,
     )
     assert "LIDOM | Rango:" not in output
     assert "2026-10-15 / 851400 / Tigres del Licey 5-3 Leones del Escogido / Final / 19:00" in output
@@ -138,6 +141,7 @@ def test_render_schedule_table_compact_no_header() -> None:
         compact=True,
         show_header=False,
         separator=" / ",
+        use_color=False,
     )
     assert "Schedule programado" not in output
     assert "2026-10-17 / 851490 / Tigres del Licey vs Leones del Escogido / Scheduled / 19:00" in output
@@ -275,7 +279,8 @@ def test_render_game_stats_contains_line_score_and_avg() -> None:
             home_errors=1,
             away_avg=".278",
             home_avg=".262",
-        )
+        ),
+        use_color=False,
     )
 
     assert "Aguilas Cibaenas vs Gigantes del Cibao" in output
@@ -390,14 +395,52 @@ def test_render_play_by_play_contains_core_fields() -> None:
         ],
     )
 
-    output = _render_play_by_play(report, plays=report.plays, compact=False, with_pitches=True)
+    output = _render_play_by_play(
+        report,
+        plays=report.plays,
+        compact=False,
+        with_pitches=True,
+        use_color=False,
+    )
     assert "Play-by-play | Juego 826278" in output
     assert "Gustavo Nunez vs Johnny Cueto" in output
     assert "Junior Lake singles, one run scores. [SCORING]" in output
     assert "1. Ball (Changeup, 86.4 mph)" in output
 
-    compact_output = _render_play_by_play(report, plays=report.plays, compact=True, with_pitches=True)
+    compact_output = _render_play_by_play(
+        report,
+        plays=report.plays,
+        compact=True,
+        with_pitches=True,
+        use_color=False,
+    )
     assert "Picheos: Called Strike (Sinker, 95.1 mph); In play, out(s) (Sinker, 96.8 mph)" in compact_output
+
+
+def test_render_table_colors_team_names() -> None:
+    games = [
+        LidomGameScore(
+            game_pk=1,
+            official_date="2026-10-16",
+            start_time_rd="19:00",
+            away_team="Tigres del Licey",
+            home_team="Leones del Escogido",
+            away_score=None,
+            home_score=None,
+            status="Scheduled",
+        )
+    ]
+
+    output = _render_table(
+        games=games,
+        date_iso="2026-10-16",
+        compact=True,
+        show_header=False,
+        separator=" | ",
+        use_color=True,
+    )
+    assert "\033[94mTigres del Licey\033[0m" in output
+    assert "\033[91mLeones del Escogido\033[0m" in output
 
 
 def test_filter_play_by_play_supports_inning_and_team() -> None:
