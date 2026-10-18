@@ -36,15 +36,20 @@ CLI en Python para consultar resultados en vivo de la Liga Dominicana de Béisbo
 - Consulta de resultados por fecha.
 - Consulta de resultados por rangos recientes (`yesterday`, `last-week`, `last-month`).
 - Consulta de juegos programados por día, semana o mes.
+- Tabla de posiciones (`standings`).
+- Boxscore por juego (`boxscore`).
+- Estadísticas de jugador por nombre o id (`player`).
+- Próximos juegos (`next`) y alias de hoy (`today`).
 - Modo de actualización continua para seguimiento en vivo.
 - Turno actual (at-bat) en vivo por `gamePk`.
 - Play-by-play completo por `gamePk`.
 - Stats clave del juego (R/H/E y AVG por equipo) en vivo por `gamePk`.
-- Líderes de bateo (AVG) por temporada de LIDOM.
+- Líderes por categoría (`avg`, `hr`, `rbi`, `obp`, `ops`, `era`, `k`, `saves`).
 - Filtros por estado de juego y por equipo.
 - Salida legible en tabla para terminal.
 - Colores ANSI opcionales por equipo (`--color`).
-- Salida JSON para integración con scripts.
+- Exportación `--format text|json|csv|md` en comandos de listado.
+- Modo TUI básico para terminal (`tui`).
 - Reintentos automáticos con backoff para errores transitorios de red.
 
 ## Identificadores de API
@@ -102,6 +107,37 @@ Schedule con colores de equipos:
 
 ```bash
 lidom-live schedule --period week --color
+```
+
+Tabla de posiciones:
+
+```bash
+lidom-live standings --season 2026
+```
+
+Boxscore por juego:
+
+```bash
+lidom-live boxscore --game-pk 826278
+```
+
+Jugador por nombre o id:
+
+```bash
+lidom-live player --name "Lester" --season 2026
+lidom-live player --id 672284 --season 2026
+```
+
+Próximos juegos:
+
+```bash
+lidom-live next --team "Licey" --count 3
+```
+
+Alias de hoy:
+
+```bash
+lidom-live today --compact
 ```
 
 Salida JSON:
@@ -216,7 +252,35 @@ lidom-live game-stats --game-pk 851509 --color
 Líderes de bateo (AVG) para una temporada:
 
 ```bash
-lidom-live leaders --season 2025 --limit 10
+lidom-live leaders --season 2025 --category avg --top 10
+```
+
+Líderes por otras categorías:
+
+```bash
+lidom-live leaders --season 2026 --category hr --top 10
+lidom-live leaders --season 2026 --category era --top 10
+```
+
+Alertas en modo watch:
+
+```bash
+lidom-live watch --alert --bell
+lidom-live atbat --game-pk 851509 --watch --alert --bell
+```
+
+Exportación de salida:
+
+```bash
+lidom-live now --date 2026-10-16 --format csv
+lidom-live standings --season 2026 --format md
+lidom-live playbyplay --game-pk 826278 --format json
+```
+
+Modo TUI (salir con `q`):
+
+```bash
+lidom-live tui --date 2026-10-18 --interval 10
 ```
 
 ## Salida esperada

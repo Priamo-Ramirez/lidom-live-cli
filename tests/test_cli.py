@@ -3,8 +3,11 @@ from __future__ import annotations
 from datetime import date
 
 from lidom_live_cli.cli import (
+    _detect_atbat_alerts,
+    _detect_game_alerts,
     _filter_games,
     _filter_play_by_play,
+    _normalize_text,
     _parse_csv_values,
     _parse_iso_date,
     _render_at_bat,
@@ -14,6 +17,7 @@ from lidom_live_cli.cli import (
     _render_play_by_play,
     _render_schedule_table,
     _render_table,
+    _resolve_output_format,
     _resolve_period_dates,
     _resolve_schedule_dates,
     _watch_at_bat,
@@ -80,6 +84,31 @@ def test_render_table_compact_no_header() -> None:
     )
     assert "LIDOM | Fecha:" not in output
     assert "851509 / Aguilas Cibaenas 3-2 Gigantes del Cibao / In Progress / 19:00" in output
+
+
+def test_render_table_compact_scheduled_uses_vs() -> None:
+    games = [
+        LidomGameScore(
+            game_pk=851491,
+            official_date="2026-10-16",
+            start_time_rd="19:15",
+            away_team="Tigres del Licey",
+            home_team="Leones del Escogido",
+            away_score=None,
+            home_score=None,
+            status="Scheduled",
+        )
+    ]
+
+    output = _render_table(
+        games=games,
+        date_iso="2026-10-16",
+        compact=True,
+        show_header=False,
+        separator=" / ",
+        use_color=False,
+    )
+    assert "Tigres del Licey vs Leones del Escogido" in output
 
 
 def test_render_history_table_compact_no_header() -> None:
@@ -325,6 +354,8 @@ def test_watch_at_bat_rejects_non_positive_interval() -> None:
             interval_seconds=0,
             iterations=1,
             clear_screen=False,
+            alert=False,
+            bell=False,
         )
     except ValueError as error:
         assert "--interval" in str(error)
@@ -346,6 +377,8 @@ def test_watch_at_bat_rejects_negative_iterations() -> None:
             interval_seconds=1,
             iterations=-1,
             clear_screen=False,
+            alert=False,
+            bell=False,
         )
     except ValueError as error:
         assert "--iterations" in str(error)
@@ -508,3 +541,102 @@ def test_parse_iso_date_valid_and_invalid() -> None:
         assert "YYYY-MM-DD" in str(error)
     else:
         raise AssertionError("Se esperaba ValueError para formato de fecha inválido")
+
+
+def test_resolve_output_format_json_flag() -> None:
+    assert _resolve_output_format("text", json_flag=True) == "json"
+    assert _resolve_output_format("csv", json_flag=False) == "csv"
+
+
+def test_normalize_text_removes_accents() -> None:
+    assert _normalize_text("Aguilás Cibaeñas") == "aguilas cibaenas"
+
+
+def test_detect_game_alerts_and_atbat_alerts() -> None:
+    previous = {
+        1: LidomGameScore(
+            game_pk=1,
+            official_date="2026-10-16",
+            start_time_rd="19:00",
+            away_team="Tigres del Licey",
+            home_team="Leones del Escogido",
+            away_score=1,
+            home_score=1,
+            status="In Progress",
+        )
+    }
+    current = [
+        LidomGameScore(
+            game_pk=1,
+            official_date="2026-10-16",
+            start_time_rd="19:00",
+            away_team="Tigres del Licey",
+            home_team="Leones del Escogido",
+            away_score=2,
+            home_score=1,
+            status="Final",
+        )
+    ]
+    game_alerts = _detect_game_alerts(previous, current)
+    assert any("Cambio de marcador" in alert for alert in game_alerts)
+    assert any("Cambio de estado" in alert for alert in game_alerts)
+
+    previous_atbat = AtBatSnapshot(
+        game_pk=1,
+        status="In Progress",
+        official_date="2026-10-16",
+        venue="Estadio",
+        away_team="Tigres del Licey",
+        home_team="Leones del Escogido",
+        away_runs=1,
+        home_runs=1,
+        inning=7,
+        half_inning="bottom",
+        batting_team="Leones del Escogido",
+        runners="Bases vacías",
+        batter="Jugador A",
+        batter_side="Right",
+        pitcher="Jugador B",
+        pitcher_hand="Right",
+        balls=1,
+        strikes=1,
+        outs=1,
+        last_event="Ball",
+        last_pitch_type="Fastball",
+        last_pitch_speed=95.0,
+        on_deck="Jugador C",
+        batter_today="1-2",
+        pitcher_today="1.0 IP",
+        event_sequence=[],
+    )
+    current_atbat = AtBatSnapshot(
+        game_pk=1,
+        status="In Progress",
+        official_date="2026-10-16",
+        venue="Estadio",
+        away_team="Tigres del Licey",
+        home_team="Leones del Escogido",
+        away_runs=2,
+        home_runs=1,
+        inning=7,
+        half_inning="bottom",
+        batting_team="Leones del Escogido",
+        runners="Bases vacías",
+        batter="Jugador A",
+        batter_side="Right",
+        pitcher="Jugador B",
+        pitcher_hand="Right",
+        balls=1,
+        strikes=2,
+        outs=1,
+        last_event="Swinging Strike",
+        last_pitch_type="Slider",
+        last_pitch_speed=84.0,
+        on_deck="Jugador C",
+        batter_today="1-2",
+        pitcher_today="1.0 IP",
+        event_sequence=[],
+    )
+    atbat_alerts = _detect_atbat_alerts(previous_atbat, current_atbat)
+    assert any("Nuevo evento" in alert for alert in atbat_alerts)
+    assert any("Conteo actualizado" in alert for alert in atbat_alerts)

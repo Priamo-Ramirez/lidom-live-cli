@@ -206,6 +206,38 @@ class LidomApiClient:
             },
         )
 
+    def get_standings(self, season: int) -> dict[str, Any]:
+        return self._get_json(
+            "/standings",
+            params={
+                "sportId": WINTER_LEAGUES_SPORT_ID,
+                "leagueId": LIDOM_LEAGUE_ID,
+                "season": season,
+            },
+        )
+
+    def get_season_stats(
+        self,
+        group: str,
+        season: int,
+        limit: int = 1000,
+        sort_stat: str | None = None,
+        order: str = "desc",
+    ) -> dict[str, Any]:
+        params: dict[str, Any] = {
+            "stats": "season",
+            "group": group,
+            "sportIds": WINTER_LEAGUES_SPORT_ID,
+            "leagueIds": LIDOM_LEAGUE_ID,
+            "gameType": "R",
+            "season": season,
+            "limit": limit,
+        }
+        if sort_stat:
+            params["sortStat"] = sort_stat
+            params["order"] = order
+        return self._get_json("/stats", params=params)
+
     def get_live_feed(self, game_pk: int) -> dict[str, Any]:
         return self._get_json(f".1/game/{game_pk}/feed/live")
 
