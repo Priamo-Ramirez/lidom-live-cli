@@ -6,13 +6,16 @@ from lidom_live_cli.cli import (
     _filter_games,
     _filter_play_by_play,
     _parse_csv_values,
+    _parse_iso_date,
     _render_at_bat,
     _render_game_stats,
     _render_history_table,
     _render_league_leaders,
     _render_play_by_play,
+    _render_schedule_table,
     _render_table,
     _resolve_period_dates,
+    _resolve_schedule_dates,
     _watch_at_bat,
 )
 from lidom_live_cli.client import (
@@ -112,6 +115,32 @@ def test_render_history_table_compact_no_header() -> None:
     assert "LIDOM | Rango:" not in output
     assert "2026-10-15 / 851400 / Tigres del Licey 5-3 Leones del Escogido / Final / 19:00" in output
     assert "2026-10-16 / 851401 / Aguilas Cibaenas 2-1 Gigantes del Cibao / Final / 19:15" in output
+
+
+def test_render_schedule_table_compact_no_header() -> None:
+    games = [
+        LidomGameScore(
+            game_pk=851490,
+            official_date="2026-10-17",
+            start_time_rd="19:00",
+            away_team="Tigres del Licey",
+            home_team="Leones del Escogido",
+            away_score=None,
+            home_score=None,
+            status="Scheduled",
+        )
+    ]
+
+    output = _render_schedule_table(
+        games=games,
+        start_date_iso="2026-10-17",
+        end_date_iso="2026-10-17",
+        compact=True,
+        show_header=False,
+        separator=" / ",
+    )
+    assert "Schedule programado" not in output
+    assert "2026-10-17 / 851490 / Tigres del Licey vs Leones del Escogido / Scheduled / 19:00" in output
 
 
 def test_filter_games_by_status_and_team() -> None:
@@ -419,3 +448,20 @@ def test_resolve_period_dates() -> None:
     assert _resolve_period_dates("yesterday", today=base_day) == (date(2026, 10, 16), date(2026, 10, 16))
     assert _resolve_period_dates("last-week", today=base_day) == (date(2026, 10, 10), date(2026, 10, 16))
     assert _resolve_period_dates("last-month", today=base_day) == (date(2026, 9, 17), date(2026, 10, 16))
+
+
+def test_resolve_schedule_dates() -> None:
+    anchor = date(2026, 10, 17)
+    assert _resolve_schedule_dates("day", anchor_date=anchor) == (date(2026, 10, 17), date(2026, 10, 17))
+    assert _resolve_schedule_dates("week", anchor_date=anchor) == (date(2026, 10, 17), date(2026, 10, 23))
+    assert _resolve_schedule_dates("month", anchor_date=anchor) == (date(2026, 10, 17), date(2026, 11, 15))
+
+
+def test_parse_iso_date_valid_and_invalid() -> None:
+    assert _parse_iso_date("2026-10-17") == date(2026, 10, 17)
+    try:
+        _parse_iso_date("17-10-2026")
+    except ValueError as error:
+        assert "YYYY-MM-DD" in str(error)
+    else:
+        raise AssertionError("Se esperaba ValueError para formato de fecha inválido")

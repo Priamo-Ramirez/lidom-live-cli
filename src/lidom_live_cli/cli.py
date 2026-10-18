@@ -34,6 +34,13 @@ ANSI_GREEN = "\033[32m"
 ANSI_YELLOW = "\033[33m"
 ANSI_RED = "\033[31m"
 
+DEFAULT_SCHEDULE_STATUSES = (
+    "Scheduled",
+    "Pre-Game",
+    "Warmup",
+    "Delayed Start",
+)
+
 
 def _score(value: int | None) -> str:
     return "-" if value is None else str(value)
@@ -135,6 +142,55 @@ def _render_history_table(
                 lines.append(
                     f"{game.official_date}{separator}{game.game_pk}{separator}"
                     f"{game.away_team} {_score(game.away_score)}-{_score(game.home_score)} {game.home_team}"
+                    f"{separator}{game.status}{separator}{game.start_time_rd}"
+                )
+            else:
+                lines.append(
+                    f"{game.official_date:<10} {game.game_pk:<8} {game.away_team:<26} "
+                    f"{_score(game.away_score):>2}  {game.home_team:<26} {_score(game.home_score):>2}  "
+                    f"{game.status:<18} {game.start_time_rd}"
+                )
+    return "\n".join(lines)
+
+
+def _render_schedule_table(
+    games: list[LidomGameScore],
+    start_date_iso: str,
+    end_date_iso: str,
+    compact: bool,
+    show_header: bool,
+    separator: str,
+) -> str:
+    lines: list[str] = []
+    if show_header:
+        stamp = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+        lines.append(
+            f"LIDOM | Schedule programado: {start_date_iso} -> {end_date_iso} | Actualizado: {stamp}"
+        )
+        lines.append("-" * 122)
+        if compact:
+            lines.append("Fecha | gamePk | Partido | Estado | Hora RD")
+        else:
+            lines.append(
+                f"{'Fecha':<10} {'gamePk':<8} {'Visitante':<26} {'R':>2}  "
+                f"{'Home':<26} {'R':>2}  {'Estado':<18} {'Hora RD'}"
+            )
+        lines.append("-" * 122)
+
+    if not games:
+        lines.append("Sin juegos programados para el rango indicado.")
+    else:
+        ordered_games = sorted(games, key=lambda game: (game.official_date, game.start_time_rd, game.game_pk))
+        for game in ordered_games:
+            if compact:
+                matchup = (
+                    f"{game.away_team} vs {game.home_team}"
+                    if game.away_score is None and game.home_score is None
+                    else f"{game.away_team} {_score(game.away_score)}-{_score(game.home_score)} {game.home_team}"
+                )
+                lines.append(
+                    f"{game.official_date}{separator}{game.game_pk}{separator}"
+                    f"{matchup}"
                     f"{separator}{game.status}{separator}{game.start_time_rd}"
                 )
             else:
@@ -396,6 +452,44 @@ def _print_history(
     )
 
 
+def _print_schedule(
+    client: LidomApiClient,
+    period: str,
+    anchor_date_iso: str,
+    as_json: bool,
+    status_filter: str | None,
+    team_filter: str | None,
+    compact: bool,
+    show_header: bool,
+    separator: str,
+) -> None:
+    anchor_date = _parse_iso_date(anchor_date_iso)
+    start_date, end_date = _resolve_schedule_dates(period=period, anchor_date=anchor_date)
+    effective_status_filter = status_filter or ",".join(DEFAULT_SCHEDULE_STATUSES)
+    start_date_iso = start_date.isoformat()
+    end_date_iso = end_date.isoformat()
+    games = _fetch_filtered_games_range(
+        client=client,
+        start_date_iso=start_date_iso,
+        end_date_iso=end_date_iso,
+        status_filter=effective_status_filter,
+        team_filter=team_filter,
+    )
+    if as_json:
+        print(json.dumps([asdict(game) for game in games], ensure_ascii=False, indent=2))
+        return
+    print(
+        _render_schedule_table(
+            games=games,
+            start_date_iso=start_date_iso,
+            end_date_iso=end_date_iso,
+            compact=compact,
+            show_header=show_header,
+            separator=separator,
+        )
+    )
+
+
 def _print_at_bat(
     client: LidomApiClient, game_pk: int, as_json: bool, compact: bool, use_color: bool
 ) -> None:
@@ -533,6 +627,31 @@ def main() -> int:
     history_parser.add_argument("--compact", action="store_true", help="Usa vista compacta")
     history_parser.add_argument("--no-header", action="store_true", help="Oculta cabecera de la tabla")
     history_parser.add_argument("--separator", default=" | ", help="Separador en modo compacto")
+
+    schedule_parser = subparsers.add_parser(
+        "schedule",
+        help="Muestra juegos programados por día, semana o mes",
+    )
+    schedule_parser.add_argument(
+        "--period",
+        choices=["day", "week", "month"],
+        default="day",
+        help="Rango de schedule a consultar (default day)",
+    )
+    schedule_parser.add_argument(
+        "--date",
+        default=get_today_in_dominican_republic(),
+        help=f"Fecha ancla YYYY-MM-DD (default hoy en {DOMINICAN_TZ})",
+    )
+    schedule_parser.add_argument("--json", action="store_true", help="Salida en formato JSON")
+    schedule_parser.add_argument(
+        "--status",
+        help='Sobrescribe estados programados por defecto con estados CSV, por ejemplo: "Scheduled,Pre-Game"',
+    )
+    schedule_parser.add_argument("--team", help="Filtra por equipo (coincidencia parcial)")
+    schedule_parser.add_argument("--compact", action="store_true", help="Usa vista compacta")
+    schedule_parser.add_argument("--no-header", action="store_true", help="Oculta cabecera de la tabla")
+    schedule_parser.add_argument("--separator", default=" | ", help="Separador en modo compacto")
 
     watch_parser = subparsers.add_parser("watch", help="Actualiza resultados continuamente")
     watch_parser.add_argument(
@@ -685,6 +804,20 @@ def main() -> int:
             )
             return EXIT_OK
 
+        if args.command == "schedule":
+            _print_schedule(
+                client=client,
+                period=args.period,
+                anchor_date_iso=args.date,
+                as_json=args.json,
+                status_filter=args.status,
+                team_filter=args.team,
+                compact=args.compact,
+                show_header=not args.no_header,
+                separator=args.separator,
+            )
+            return EXIT_OK
+
         if args.command == "game-stats":
             _print_game_stats(client=client, game_pk=args.game_pk, as_json=args.json)
             return EXIT_OK
@@ -770,3 +903,20 @@ def _resolve_period_dates(period: str, today: date | None = None) -> tuple[date,
     if period == "last-month":
         return current - timedelta(days=30), current - timedelta(days=1)
     raise ValueError(f"Período no soportado: {period}")
+
+
+def _resolve_schedule_dates(period: str, anchor_date: date) -> tuple[date, date]:
+    if period == "day":
+        return anchor_date, anchor_date
+    if period == "week":
+        return anchor_date, anchor_date + timedelta(days=6)
+    if period == "month":
+        return anchor_date, anchor_date + timedelta(days=29)
+    raise ValueError(f"Período de schedule no soportado: {period}")
+
+
+def _parse_iso_date(date_iso: str) -> date:
+    try:
+        return datetime.strptime(date_iso, "%Y-%m-%d").date()
+    except ValueError as error:
+        raise ValueError(f"Fecha inválida '{date_iso}'. Usa formato YYYY-MM-DD.") from error
